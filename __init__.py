@@ -569,12 +569,35 @@ def scan_media_directory(base_dir, relative_path=""):
         if os.path.isdir(entry_path):
             folder_preview_path = os.path.join(current_dir, f".{entry}.png")
             has_preview = os.path.exists(folder_preview_path)
+
+            # 检查文件夹是否有内容
+            has_content = False
+            try:
+                for sub_entry in os.listdir(entry_path):
+                    sub_entry_path = os.path.join(entry_path, sub_entry)
+                    if os.path.isfile(sub_entry_path):
+                        sub_entry_lower = sub_entry.lower()
+                        if (sub_entry_lower.endswith(image_extensions) or
+                            sub_entry_lower.endswith(audio_extensions) or
+                            sub_entry_lower.endswith(video_extensions)):
+                            has_content = True
+                            break
+                    elif os.path.isdir(sub_entry_path):
+                        # 递归检查子文件夹
+                        sub_items = scan_media_directory(base_dir, entry_relative_path + "/" + sub_entry)
+                        if sub_items:
+                            has_content = True
+                            break
+            except:
+                pass
+
             items.append(
                 {
                     "type": "folder",
                     "name": entry,
                     "path": entry_relative_path,
                     "has_preview": has_preview,
+                    "has_content": has_content,
                 }
             )
         elif entry.lower().endswith(image_extensions):

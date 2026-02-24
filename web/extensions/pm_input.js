@@ -48,6 +48,8 @@ class PMInputDialog {
         this.promptCallback = null;
         this.confirmCallback = null;
         this.filterType = 'all';
+        this.hideEmptyFolders = false;
+        this.selectionCallback = null;
         this.init();
     }
 
@@ -257,6 +259,20 @@ class PMInputDialog {
         });
     }
 
+    folderHasContent(item) {
+        // 检查文件夹是否有内容
+        if (item.has_content !== undefined) {
+            return item.has_content;
+        }
+        // 备用检查
+        for (const subItem of this.items) {
+            if (subItem.path.startsWith(item.path + '/') && subItem.path !== item.path) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     renderItems() {
         const listEl = this.dialog.querySelector('#pm-input-list');
 
@@ -265,6 +281,15 @@ class PMInputDialog {
             filteredItems = this.items.filter(item => {
                 if (item.type === 'folder') return true;
                 return item.type === this.filterType;
+            });
+        }
+        
+        // 如果需要隐藏空文件夹，过滤掉没有内容的文件夹
+        if (this.hideEmptyFolders) {
+            filteredItems = filteredItems.filter(item => {
+                if (item.type !== 'folder') return true;
+                // 检查文件夹是否有内容
+                return this.folderHasContent(item);
             });
         }
 
@@ -407,6 +432,9 @@ class PMInputDialog {
 
                 if (type === 'folder') {
                     this.loadItems(path);
+                } else if (this.selectionCallback && type === 'image') {
+                    this.selectionCallback(item.path);
+                    this.close();
                 } else if (type === 'image' || type === 'video') {
                     this.openPreview(path);
                 }
@@ -586,7 +614,14 @@ class PMInputDialog {
         playerEl._audio = audio;
     }
 
-    async show() {
+    async show(options = {}) {
+        this.hideEmptyFolders = options.hideEmptyFolders || false;
+        this.selectionCallback = options.selectionCallback || null;
+        if (options.fixedFilter) {
+            this.filterType = options.fixedFilter;
+        } else {
+            this.filterType = 'all';
+        }
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -1088,6 +1123,8 @@ app.registerExtension({
     init() {
     },
     
+    dialog: pmInputDialog,
+    
     setup() {
         const insertButton = () => {
             const existingTab = document.getElementById('pm-input-tab');
@@ -1109,6 +1146,11 @@ app.registerExtension({
                     const label = pmButton.querySelector('.side-bar-button-label');
                     if (label) {
                         label.textContent = 'PM输入';
+                    }
+                    
+                    const iconEl = pmButton.querySelector('.side-bar-button-icon, svg');
+                    if (iconEl) {
+                        iconEl.outerHTML = '<svg class="side-bar-button-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>';
                     }
                     
                     pmButton.onclick = function() {

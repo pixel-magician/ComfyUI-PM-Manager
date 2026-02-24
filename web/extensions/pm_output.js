@@ -1245,6 +1245,11 @@ app.registerExtension({
                         label.textContent = 'PM输出';
                     }
                     
+                    const iconEl = pmButton.querySelector('.side-bar-button-icon, svg');
+                    if (iconEl) {
+                        iconEl.outerHTML = '<svg class="side-bar-button-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2-2h4a2 2 0 012 2v10a2 2 0 01-2 2H5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8m0 0l-3-3m3 3l3-3"></path></svg>';
+                    }
+                    
                     pmButton.onclick = function() {
                         pmOutputDialog.show();
                     };
