@@ -51,6 +51,7 @@ class PMInputDialog {
         this.hideEmptyFolders = false;
         this.selectionCallback = null;
         this.fixedFilter = null;
+        this.directoryType = 'input';
         this.init();
     }
 
@@ -201,7 +202,8 @@ class PMInputDialog {
 
     async loadItems(path = '') {
         try {
-            const url = path ? `/pm_input/list?path=${encodeURIComponent(path)}` : '/pm_input/list';
+            const prefix = this.getUrlPrefix();
+            const url = path ? `${prefix}/list?path=${encodeURIComponent(path)}` : `${prefix}/list`;
             const response = await fetchWithUser(url);
             const data = await response.json();
             this.items = data.items || [];
@@ -258,15 +260,36 @@ class PMInputDialog {
         });
     }
 
+    getUrlPrefix() {
+        return this.directoryType === 'output' ? '/pm_output' : '/pm_input';
+    }
+
     folderHasContent(item) {
-        // 检查文件夹是否有内容
-        if (item.has_content !== undefined) {
-            return item.has_content;
+        // 根据当前筛选类型检查文件夹是否有对应内容
+        if (this.filterType === 'all') {
+            if (item.has_content !== undefined) {
+                return item.has_content;
+            }
+        } else if (this.filterType === 'image') {
+            if (item.has_image !== undefined) {
+                return item.has_image;
+            }
+        } else if (this.filterType === 'audio') {
+            if (item.has_audio !== undefined) {
+                return item.has_audio;
+            }
+        } else if (this.filterType === 'video') {
+            if (item.has_video !== undefined) {
+                return item.has_video;
+            }
         }
+        
         // 备用检查
         for (const subItem of this.items) {
             if (subItem.path.startsWith(item.path + '/') && subItem.path !== item.path) {
-                return true;
+                if (this.filterType === 'all' || subItem.type === this.filterType) {
+                    return true;
+                }
             }
         }
         return false;
@@ -307,11 +330,11 @@ class PMInputDialog {
                     const previewName = '.' + filename + '.png';
                     pathParts.push(previewName);
                     const dotPngPath = pathParts.join('/');
-                    previewUrl = `/pm_input/preview/${encodeURIComponent(dotPngPath)}?t=${Date.now()}`;
+                    previewUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(dotPngPath)}?t=${Date.now()}`;
                 } else if (item.type === 'image') {
-                    previewUrl = `/pm_input/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
+                    previewUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
                 } else if (item.type === 'video') {
-                    previewUrl = `/pm_input/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
+                    previewUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
                 }
                 
                 if (isFolder) {
@@ -431,7 +454,7 @@ class PMInputDialog {
 
                 if (type === 'folder') {
                     this.loadItems(path);
-                } else if (this.selectionCallback && type === 'image') {
+                } else if (this.selectionCallback && (type === 'image' || type === 'audio' || type === 'video')) {
                     this.selectionCallback(item.path);
                     this.close();
                 } else if (type === 'image' || type === 'video') {
@@ -477,12 +500,12 @@ class PMInputDialog {
     }
 
     openPreview(path) {
-        const previewUrl = `/pm_input/preview/${encodeURIComponent(path)}`;
+        const previewUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(path)}`;
         window.open(previewUrl, '_blank');
     }
 
     setupAudioPlayer(playerEl, path) {
-        const audioUrl = `/pm_input/preview/${encodeURIComponent(path)}`;
+        const audioUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(path)}`;
         const audio = new Audio(audioUrl);
         const playBtn = playerEl.querySelector('.pm-audio-play-btn');
         const playIcon = playerEl.querySelector('.pm-audio-play-icon');
@@ -613,15 +636,52 @@ class PMInputDialog {
         playerEl._audio = audio;
     }
 
+    updateDialogHeader() {
+        const headerContainer = this.dialog.querySelector('.pm-dialog-content .flex.items-center.justify-between');
+        if (!headerContainer) return;
+        
+        const iconSvg = this.directoryType === 'output' 
+            ? `<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+               </svg>`
+            : `<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+               </svg>`;
+        
+        const title = this.directoryType === 'output' 
+            ? 'PM 输出管理器' 
+            : 'PM 输入管理器';
+        
+        const description = this.directoryType === 'output' 
+            ? '管理您的输出资源（图片、音频、视频）' 
+            : '管理您的输入资源（图片、音频、视频）';
+        
+        const titleGradient = this.directoryType === 'output' 
+            ? 'from-orange-400 to-yellow-400' 
+            : 'from-green-400 to-teal-400';
+        
+        headerContainer.querySelector('.flex.items-center.gap-3').innerHTML = `
+            ${iconSvg}
+            <div>
+                <h2 class="text-xl font-bold bg-gradient-to-r ${titleGradient} bg-clip-text text-transparent">${title}</h2>
+                <p class="text-xs text-[var(--fg-light)]">${description}</p>
+            </div>
+        `;
+    }
+
     async show(options = {}) {
         this.hideEmptyFolders = options.hideEmptyFolders || false;
         this.selectionCallback = options.selectionCallback || null;
         this.fixedFilter = options.fixedFilter || null;
+        this.disableNewFolder = options.disableNewFolder || false;
+        this.directoryType = options.directoryType || 'input';
         if (this.fixedFilter) {
             this.filterType = this.fixedFilter;
         } else {
             this.filterType = 'all';
         }
+        
+        this.updateDialogHeader();
         
         const filterSelect = this.dialog.querySelector('#pm-input-filter');
         if (filterSelect) {
@@ -647,6 +707,8 @@ class PMInputDialog {
         this.fixedFilter = null;
         this.selectionCallback = null;
         this.hideEmptyFolders = false;
+        this.disableNewFolder = false;
+        this.directoryType = 'input';
         
         const filterSelect = this.dialog.querySelector('#pm-input-filter');
         if (filterSelect) {
@@ -692,7 +754,7 @@ class PMInputDialog {
                     删除
                 </div>
             `;
-        } else {
+        } else if (!this.disableNewFolder) {
             this.contextMenu.innerHTML = `
                 <div class="pm-context-menu-item" data-action="new-folder">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -701,6 +763,8 @@ class PMInputDialog {
                     新建文件夹
                 </div>
             `;
+        } else {
+            this.contextMenu.innerHTML = '';
         }
         
         this.contextMenu.querySelectorAll('.pm-context-menu-item').forEach(item => {
@@ -892,7 +956,7 @@ class PMInputDialog {
     downloadItem(item) {
         if (!item || item.type === 'folder') return;
         
-        const downloadUrl = `/pm_input/preview/${encodeURIComponent(item.path)}`;
+        const downloadUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(item.path)}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = item.name;
@@ -908,7 +972,7 @@ class PMInputDialog {
             if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
             
             try {
-                const response = await fetchWithUser('/pm_input/rename', {
+                const response = await fetchWithUser(`${this.getUrlPrefix()}/rename`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -939,7 +1003,7 @@ class PMInputDialog {
             if (!confirmed) return;
             
             try {
-                const response = await fetchWithUser(`/pm_input/delete/${encodeURIComponent(item.path)}`, {
+                const response = await fetchWithUser(`${this.getUrlPrefix()}/delete/${encodeURIComponent(item.path)}`, {
                     method: 'DELETE'
                 });
                 
@@ -963,7 +1027,7 @@ class PMInputDialog {
             const folderName = name.trim();
             
             try {
-                const response = await fetchWithUser('/pm_input/new_folder', {
+                const response = await fetchWithUser(`${this.getUrlPrefix()}/new_folder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -987,7 +1051,7 @@ class PMInputDialog {
 
     async showInfoDialog(item) {
         try {
-            const response = await fetchWithUser(`/pm_input/info/${encodeURIComponent(item.path)}`);
+            const response = await fetchWithUser(`${this.getUrlPrefix()}/info/${encodeURIComponent(item.path)}`);
             const info = await response.json();
             
             if (!this.infoDialog) {

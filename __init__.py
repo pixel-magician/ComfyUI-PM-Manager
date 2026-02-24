@@ -10,6 +10,9 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# 导入视频服务器端点
+from . import pm_video_server
+
 
 from .Node.unet_loader import (
     NODE_CLASS_MAPPINGS as UNET_NODE_CLASS_MAPPINGS,
@@ -31,6 +34,14 @@ from .Node.image_loader import (
     NODE_CLASS_MAPPINGS as IMAGE_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
 )
+from .Node.audio_loader import (
+    NODE_CLASS_MAPPINGS as AUDIO_NODE_CLASS_MAPPINGS,
+    NODE_DISPLAY_NAME_MAPPINGS as AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
+)
+from .Node.video_loader import (
+    NODE_CLASS_MAPPINGS as VIDEO_NODE_CLASS_MAPPINGS,
+    NODE_DISPLAY_NAME_MAPPINGS as VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
+)
 
 NODE_CLASS_MAPPINGS = {
     **UNET_NODE_CLASS_MAPPINGS,
@@ -38,6 +49,8 @@ NODE_CLASS_MAPPINGS = {
     **VAE_NODE_CLASS_MAPPINGS,
     **CLIP_NODE_CLASS_MAPPINGS,
     **IMAGE_NODE_CLASS_MAPPINGS,
+    **AUDIO_NODE_CLASS_MAPPINGS,
+    **VIDEO_NODE_CLASS_MAPPINGS,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **UNET_NODE_DISPLAY_NAME_MAPPINGS,
@@ -45,6 +58,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **VAE_NODE_DISPLAY_NAME_MAPPINGS,
     **CLIP_NODE_DISPLAY_NAME_MAPPINGS,
     **IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
+    **AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
+    **VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
 }
 
 
@@ -560,6 +575,42 @@ def scan_media_directory(base_dir, relative_path=""):
     if not os.path.exists(current_dir):
         return items
 
+    def check_folder_content(folder_path):
+        """检查文件夹包含的内容类型"""
+        has_image = False
+        has_audio = False
+        has_video = False
+        has_subfolder_with_content = False
+        
+        try:
+            for sub_entry in os.listdir(folder_path):
+                sub_entry_path = os.path.join(folder_path, sub_entry)
+                if os.path.isfile(sub_entry_path):
+                    sub_entry_lower = sub_entry.lower()
+                    if sub_entry_lower.endswith(image_extensions):
+                        has_image = True
+                    elif sub_entry_lower.endswith(audio_extensions):
+                        has_audio = True
+                    elif sub_entry_lower.endswith(video_extensions):
+                        has_video = True
+                elif os.path.isdir(sub_entry_path):
+                    # 递归检查子文件夹
+                    sub_result = check_folder_content(sub_entry_path)
+                    if sub_result["has_image"] or sub_result["has_audio"] or sub_result["has_video"]:
+                        has_subfolder_with_content = True
+                        has_image = has_image or sub_result["has_image"]
+                        has_audio = has_audio or sub_result["has_audio"]
+                        has_video = has_video or sub_result["has_video"]
+        except:
+            pass
+        
+        return {
+            "has_image": has_image,
+            "has_audio": has_audio,
+            "has_video": has_video,
+            "has_content": has_image or has_audio or has_video or has_subfolder_with_content
+        }
+
     for entry in os.listdir(current_dir):
         entry_path = os.path.join(current_dir, entry)
         entry_relative_path = (
@@ -571,25 +622,7 @@ def scan_media_directory(base_dir, relative_path=""):
             has_preview = os.path.exists(folder_preview_path)
 
             # 检查文件夹是否有内容
-            has_content = False
-            try:
-                for sub_entry in os.listdir(entry_path):
-                    sub_entry_path = os.path.join(entry_path, sub_entry)
-                    if os.path.isfile(sub_entry_path):
-                        sub_entry_lower = sub_entry.lower()
-                        if (sub_entry_lower.endswith(image_extensions) or
-                            sub_entry_lower.endswith(audio_extensions) or
-                            sub_entry_lower.endswith(video_extensions)):
-                            has_content = True
-                            break
-                    elif os.path.isdir(sub_entry_path):
-                        # 递归检查子文件夹
-                        sub_items = scan_media_directory(base_dir, entry_relative_path + "/" + sub_entry)
-                        if sub_items:
-                            has_content = True
-                            break
-            except:
-                pass
+            folder_content = check_folder_content(entry_path)
 
             items.append(
                 {
@@ -597,7 +630,10 @@ def scan_media_directory(base_dir, relative_path=""):
                     "name": entry,
                     "path": entry_relative_path,
                     "has_preview": has_preview,
-                    "has_content": has_content,
+                    "has_content": folder_content["has_content"],
+                    "has_image": folder_content["has_image"],
+                    "has_audio": folder_content["has_audio"],
+                    "has_video": folder_content["has_video"],
                 }
             )
         elif entry.lower().endswith(image_extensions):

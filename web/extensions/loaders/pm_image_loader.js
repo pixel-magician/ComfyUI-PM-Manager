@@ -15,12 +15,14 @@ function findPMInputManager() {
   return null;
 }
 
-export async function openPMInputManagerForImage(node) {
+export async function openPMInputManagerForImage(node, directoryType = 'input') {
   const manager = findPMInputManager();
   if (manager && manager.dialog) {
     await manager.dialog.show({
       hideEmptyFolders: true,
       fixedFilter: 'image',
+      disableNewFolder: true,
+      directoryType: directoryType,
       selectionCallback: (imagePath) => {
         if (node.widgets) {
           const imageWidget = node.widgets.find(w => w.name === 'image');
@@ -54,8 +56,11 @@ app.registerExtension({
         this.pm_selected_image = null;
         
         // 在原始 widgets 之后添加我们的按钮
-        this.addWidget("button", "选择文件", null, async () => {
-          await openPMInputManagerForImage(this);
+        this.addWidget("button", "从输入选择文件", null, async () => {
+          await openPMInputManagerForImage(this, 'input');
+        });
+        this.addWidget("button", "从输出选择文件", null, async () => {
+          await openPMInputManagerForImage(this, 'output');
         });
       };
       
