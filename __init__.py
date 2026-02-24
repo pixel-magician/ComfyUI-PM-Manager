@@ -1,10 +1,14 @@
 import os
 import json
+import logging
+import traceback
 from datetime import datetime
 from aiohttp import web
 import folder_paths
 import urllib.parse
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 from .unet_loader import (
@@ -269,10 +273,8 @@ async def save_model_metadata(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        import traceback
-
-        print(f"Save metadata error: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Save metadata error: {e}")
+        logger.error(traceback.format_exc())
         return web.Response(status=500, text=str(e))
 
 
@@ -343,53 +345,6 @@ async def list_pm_models(request):
     items = scan_model_directory(pm_models_dir, path)
 
     return web.json_response({"items": items, "current_path": path})
-
-
-async def delete_pm_model(request):
-    model_path = request.match_info.get("path", "")
-    model_path = urllib.parse.unquote(model_path)
-
-    pm_models_dir = get_pm_models_dir()
-    full_path = os.path.join(pm_models_dir, model_path)
-
-    if os.path.exists(full_path):
-        if os.path.isfile(full_path):
-            os.remove(full_path)
-        elif os.path.isdir(full_path):
-            import shutil
-
-            shutil.rmtree(full_path)
-
-    return web.json_response({"success": True})
-
-
-async def rename_pm_model(request):
-    try:
-        data = await request.json()
-        old_path = data.get("old_path", "")
-        new_name = data.get("new_name", "")
-
-        if not old_path or not new_name:
-            return web.Response(status=400, text="Missing old_path or new_name")
-
-        old_path = urllib.parse.unquote(old_path)
-        pm_models_dir = get_pm_models_dir()
-        old_full_path = os.path.join(pm_models_dir, old_path)
-
-        if not os.path.exists(old_full_path):
-            return web.Response(status=404, text="File or folder not found")
-
-        parent_dir = os.path.dirname(old_full_path)
-        new_full_path = os.path.join(parent_dir, new_name)
-
-        if os.path.exists(new_full_path):
-            return web.Response(status=400, text="New name already exists")
-
-        os.rename(old_full_path, new_full_path)
-        return web.json_response({"success": True})
-    except Exception as e:
-        print(f"Rename error: {e}")
-        return web.Response(status=500, text=str(e))
 
 
 async def get_pm_model_preview(request):
@@ -466,10 +421,8 @@ async def replace_model_preview(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        import traceback
-
-        print(f"Replace preview error: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Replace preview error: {e}")
+        logger.error(traceback.format_exc())
         return web.Response(status=500, text=str(e))
 
 
@@ -558,7 +511,7 @@ async def rename_pm_model(request):
         os.rename(old_full_path, new_full_path)
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"Rename error: {e}")
+        logger.error(f"Rename error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -583,7 +536,7 @@ async def new_model_folder(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"New folder error: {e}")
+        logger.error(f"New folder error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -682,7 +635,6 @@ def scan_directory(base_dir, relative_path=""):
             )
         elif entry.endswith(".json"):
             workflow_name = entry[:-5]
-            json_path = entry_path
             png_path = os.path.join(current_dir, f".{workflow_name}.png")
 
             has_preview = os.path.exists(png_path)
@@ -846,7 +798,7 @@ async def rename_pm_workflow(request):
         os.rename(old_full_path, new_full_path)
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"Rename error: {e}")
+        logger.error(f"Rename error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -888,10 +840,8 @@ async def replace_preview(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        import traceback
-
-        print(f"Replace preview error: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Replace preview error: {e}")
+        logger.error(traceback.format_exc())
         return web.Response(status=500, text=str(e))
 
 
@@ -917,7 +867,7 @@ async def new_folder(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"New folder error: {e}")
+        logger.error(f"New folder error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -961,7 +911,7 @@ async def new_workflow(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"New workflow error: {e}")
+        logger.error(f"New workflow error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -1072,7 +1022,7 @@ async def rename_pm_input(request):
         os.rename(old_full_path, new_full_path)
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"Rename error: {e}")
+        logger.error(f"Rename error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -1101,7 +1051,7 @@ async def rename_pm_output(request):
         os.rename(old_full_path, new_full_path)
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"Rename error: {e}")
+        logger.error(f"Rename error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -1126,7 +1076,7 @@ async def new_input_folder(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"New folder error: {e}")
+        logger.error(f"New folder error: {e}")
         return web.Response(status=500, text=str(e))
 
 
@@ -1151,7 +1101,7 @@ async def new_output_folder(request):
 
         return web.json_response({"success": True})
     except Exception as e:
-        print(f"New folder error: {e}")
+        logger.error(f"New folder error: {e}")
         return web.Response(status=500, text=str(e))
 
 
