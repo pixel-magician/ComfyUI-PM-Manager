@@ -11,23 +11,23 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
-from .unet_loader import (
+from .Node.unet_loader import (
     NODE_CLASS_MAPPINGS as UNET_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as UNET_NODE_DISPLAY_NAME_MAPPINGS,
 )
-from .lora_loader import (
+from .Node.lora_loader import (
     NODE_CLASS_MAPPINGS as LORA_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as LORA_NODE_DISPLAY_NAME_MAPPINGS,
 )
-from .vae_loader import (
+from .Node.vae_loader import (
     NODE_CLASS_MAPPINGS as VAE_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as VAE_NODE_DISPLAY_NAME_MAPPINGS,
 )
-from .clip_loader import (
+from .Node.clip_loader import (
     NODE_CLASS_MAPPINGS as CLIP_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as CLIP_NODE_DISPLAY_NAME_MAPPINGS,
 )
-from .image_loader import (
+from .Node.image_loader import (
     NODE_CLASS_MAPPINGS as IMAGE_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
 )

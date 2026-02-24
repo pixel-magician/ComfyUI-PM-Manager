@@ -1,6 +1,5 @@
-import folder_paths
 import comfy.sd
-from .pm_utils import get_lora_path, extract_lora_name
+from ..pm_utils import get_lora_path
 
 
 class PMLoraLoader:

@@ -1,7 +1,6 @@
-import folder_paths
 import comfy.sd
 import torch
-from .pm_utils import get_unet_path, extract_unet_name
+from ..pm_utils import get_unet_path
 
 
 class PMUNetLoader:

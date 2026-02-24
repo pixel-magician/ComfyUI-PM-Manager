@@ -1,6 +1,5 @@
-import folder_paths
 import comfy.sd
-from .pm_utils import get_vae_path, extract_vae_name
+from ..pm_utils import get_vae_path
 
 
 class PMVAELoader:

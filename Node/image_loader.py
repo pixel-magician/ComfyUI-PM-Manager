@@ -92,5 +92,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMLoadImage": "PM Load Image",
+    "PMLoadImage": "PM Image Loader",
 }

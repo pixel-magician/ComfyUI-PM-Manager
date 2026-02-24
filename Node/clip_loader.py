@@ -1,7 +1,5 @@
-import folder_paths
 import comfy.sd
-import torch
-from .pm_utils import get_clip_path, extract_clip_name
+from ..pm_utils import get_clip_path
 
 
 class PMClipLoader:
