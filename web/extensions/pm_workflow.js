@@ -825,6 +825,11 @@ app.registerExtension({
                 }
                 
                 if (referenceButton) {
+                    // 添加分隔线
+                    const divider = document.createElement('div');
+                    divider.style.cssText = 'height: 1px; background-color: rgba(255, 255, 255, 0.2); margin: 8px 16px; width: calc(100% - 32px);';
+                    firstGroup.appendChild(divider);
+                    
                     const pmButton = referenceButton.cloneNode(true);
                     pmButton.id = 'pm-workflow-tab';
                     
@@ -835,7 +840,7 @@ app.registerExtension({
                     
                     const iconEl = pmButton.querySelector('.side-bar-button-icon, i');
                     if (iconEl) {
-                        iconEl.outerHTML = '<svg class="side-bar-button-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>';
+                        iconEl.outerHTML = '<svg class="side-bar-button-icon" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>';
                     }
                     
                     pmButton.onclick = function() {
@@ -844,6 +849,11 @@ app.registerExtension({
                     
                     firstGroup.appendChild(pmButton);
                 } else {
+                    // 添加分隔线
+                    const divider = document.createElement('div');
+                    divider.style.cssText = 'height: 1px; background-color: rgba(255, 255, 255, 0.2); margin: 8px 16px; width: calc(100% - 32px);';
+                    firstGroup.appendChild(divider);
+                    
                     const pmButton = document.createElement('button');
                     pmButton.id = 'pm-workflow-tab';
                     pmButton.className = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap appearance-none font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-[var(--comfy-menu-bg)] p-2 h-auto min-w-[40px] min-h-[40px] border-none';
@@ -852,7 +862,8 @@ app.registerExtension({
                     contentDiv.className = 'side-bar-button-content';
                     
                     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    iconSvg.setAttribute('class', 'side-bar-button-icon w-5 h-5');
+                    iconSvg.setAttribute('class', 'side-bar-button-icon');
+                    iconSvg.setAttribute('style', 'width: 20px; height: 20px;');
                     iconSvg.setAttribute('fill', 'none');
                     iconSvg.setAttribute('stroke', 'currentColor');
                     iconSvg.setAttribute('viewBox', '0 0 24 24');
