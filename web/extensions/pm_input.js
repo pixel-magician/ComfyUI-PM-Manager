@@ -47,6 +47,7 @@ class PMInputDialog {
         this.confirmDialog = null;
         this.promptCallback = null;
         this.confirmCallback = null;
+        this.filterType = 'all';
         this.init();
     }
 
@@ -157,6 +158,15 @@ class PMInputDialog {
                     </div>
                     <div id="pm-input-breadcrumb" class="px-6 py-3 border-b border-[var(--border-color)] flex items-center gap-2 text-sm flex-shrink-0 bg-[var(--comfy-input-bg)]/20">
                     </div>
+                    <div class="px-6 py-2 border-b border-[var(--border-color)] flex items-center gap-4 flex-shrink-0 bg-[var(--comfy-input-bg)]/10">
+                        <span class="text-sm text-[var(--fg-light)]">筛选:</span>
+                        <select id="pm-input-filter" class="px-3 py-1 rounded-lg text-sm bg-[var(--comfy-input-bg)] text-[var(--fg)] border-none outline-none cursor-pointer">
+                            <option value="all" ${this.filterType === 'all' ? 'selected' : ''}>全部</option>
+                            <option value="image" ${this.filterType === 'image' ? 'selected' : ''}>图片</option>
+                            <option value="audio" ${this.filterType === 'audio' ? 'selected' : ''}>音频</option>
+                            <option value="video" ${this.filterType === 'video' ? 'selected' : ''}>视频</option>
+                        </select>
+                    </div>
                     <div class="p-4 overflow-y-auto flex-grow">
                         <div id="pm-input-list" class="grid grid-cols-5 gap-4">
                             <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
@@ -167,15 +177,25 @@ class PMInputDialog {
         `;
         
         document.body.appendChild(this.dialog);
-        
+
         const closeBtn = this.dialog.querySelector('#pm-input-close');
         const overlay = this.dialog.querySelector('#pm-input-overlay');
-        
+
         closeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.close();
         });
         overlay.addEventListener('click', () => this.close());
+
+        this.setupFilterSelect();
+    }
+
+    setupFilterSelect() {
+        const filterSelect = this.dialog.querySelector('#pm-input-filter');
+        filterSelect.addEventListener('change', () => {
+            this.filterType = filterSelect.value;
+            this.renderItems();
+        });
     }
 
     async loadItems(path = '') {
@@ -239,11 +259,19 @@ class PMInputDialog {
 
     renderItems() {
         const listEl = this.dialog.querySelector('#pm-input-list');
-        
-        if (this.items.length === 0) {
+
+        let filteredItems = this.items;
+        if (this.filterType !== 'all') {
+            filteredItems = this.items.filter(item => {
+                if (item.type === 'folder') return true;
+                return item.type === this.filterType;
+            });
+        }
+
+        if (filteredItems.length === 0) {
             listEl.innerHTML = '<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">暂无内容</div>';
         } else {
-            listEl.innerHTML = this.items.map((item, index) => {
+            listEl.innerHTML = filteredItems.map((item, index) => {
                 const isFolder = item.type === 'folder';
                 let iconColor = 'text-[var(--fg-light)]';
                 let iconSvg = '';
@@ -257,6 +285,8 @@ class PMInputDialog {
                     const dotPngPath = pathParts.join('/');
                     previewUrl = `/pm_input/preview/${encodeURIComponent(dotPngPath)}?t=${Date.now()}`;
                 } else if (item.type === 'image') {
+                    previewUrl = `/pm_input/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
+                } else if (item.type === 'video') {
                     previewUrl = `/pm_input/preview/${encodeURIComponent(item.path)}?t=${Date.now()}`;
                 }
                 
@@ -297,14 +327,56 @@ class PMInputDialog {
                                     </div>`
                                     : item.type === 'image'
                                         ? `<img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">`
-                                        : `<div class="w-full h-full bg-[var(--comfy-input-bg)] flex items-center justify-center">
-                                            <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                ${iconSvg}
-                                            </svg>
-                                        </div>`
+                                        : item.type === 'audio'
+                                            ? `<div class="w-full h-full bg-gradient-to-br from-slate-800 via-purple-900/30 to-slate-800 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 pointer-events-none"></div>
+                                                <div class="relative z-10 flex flex-col items-center w-full">
+                                                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mb-3 shadow-lg shadow-purple-500/30">
+                                                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 18V5l12-3v13M9 18c0 0 1.56 0 2.55-.588C12.54 16.824 13 15.919 13 15s-.46-1.824-1.45-2.412C10.56 12 9 12 9 12v6zm12-3c0 0-1.56 0-2.55.588C17.46 16.176 17 17.081 17 18s.46 1.824 1.45 2.412C18.44 21 20 21 20 21v-6z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div class="pm-audio-player w-full" data-path="${item.path}">
+                                                        <div class="flex items-center justify-center gap-3 mb-3">
+                                                            <button class="pm-audio-play-btn w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-105">
+                                                                <svg class="pm-audio-play-icon w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M8 5v14l11-7z"/>
+                                                                </svg>
+                                                                <svg class="pm-audio-pause-icon w-5 h-5 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                                                </svg>
+                                                            </button>
+                                                            <span class="pm-audio-time text-xs text-gray-300 font-mono">0:00 / 0:00</span>
+                                                        </div>
+                                                        <div class="pm-audio-progress w-full rounded-full cursor-pointer mb-3 relative group" style="height: 6px; background-color: rgba(255, 255, 255, 0.15);">
+                                                            <div class="pm-audio-progress-bar rounded-full relative" style="width: 0%; height: 6px; background: linear-gradient(90deg, #a855f7, #6366f1);">
+                                                                <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-center justify-center gap-2">
+                                                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                                                            </svg>
+                                                            <input type="range" class="pm-audio-volume w-20 cursor-pointer" min="0" max="100" value="100" style="height: 4px; background: rgba(255, 255, 255, 0.15); accent-color: #60a5fa; border-radius: 2px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>`
+                                            : item.type === 'video'
+                                                ? `<video class="w-full h-full object-cover pm-video-preview" src="${previewUrl}" muted loop playsinline autoplay></video>`
+                                                : `<div class="w-full h-full bg-[var(--comfy-input-bg)] flex items-center justify-center">
+                                                    <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        ${iconSvg}
+                                                    </svg>
+                                                </div>`
                             }
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
-                                <button class="pm-input-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center" title="详细信息">
+                                <button class="pm-input-download-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="下载">
+                                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </button>
+                                <button class="pm-input-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="详细信息">
                                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
@@ -320,35 +392,51 @@ class PMInputDialog {
             }).join('');
         }
         
-        listEl.querySelectorAll('.card').forEach((card, index) => {
+        listEl.querySelectorAll('.card').forEach((card) => {
+            const path = card.dataset.path;
+            const item = filteredItems.find(i => i.path === path);
+
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.pm-input-info-btn')) {
                     return;
                 }
-                const path = card.dataset.path;
+                if (e.target.closest('.pm-input-download-btn')) {
+                    return;
+                }
                 const type = card.dataset.type;
-                
+
                 if (type === 'folder') {
                     this.loadItems(path);
-                } else if (type === 'image') {
+                } else if (type === 'image' || type === 'video') {
                     this.openPreview(path);
                 }
             });
-            
+
             card.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const item = this.items[index];
                 this.showContextMenu(e.clientX, e.clientY, item);
             });
-            
+
             const infoBtn = card.querySelector('.pm-input-info-btn');
             if (infoBtn) {
                 infoBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const item = this.items[index];
                     this.showInfoDialog(item);
                 });
+            }
+
+            const downloadBtn = card.querySelector('.pm-input-download-btn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.downloadItem(item);
+                });
+            }
+
+            const audioPlayer = card.querySelector('.pm-audio-player');
+            if (audioPlayer) {
+                this.setupAudioPlayer(audioPlayer, item.path);
             }
         });
         
@@ -364,6 +452,138 @@ class PMInputDialog {
     openPreview(path) {
         const previewUrl = `/pm_input/preview/${encodeURIComponent(path)}`;
         window.open(previewUrl, '_blank');
+    }
+
+    setupAudioPlayer(playerEl, path) {
+        const audioUrl = `/pm_input/preview/${encodeURIComponent(path)}`;
+        const audio = new Audio(audioUrl);
+        const playBtn = playerEl.querySelector('.pm-audio-play-btn');
+        const playIcon = playerEl.querySelector('.pm-audio-play-icon');
+        const pauseIcon = playerEl.querySelector('.pm-audio-pause-icon');
+        const timeEl = playerEl.querySelector('.pm-audio-time');
+        const progressBar = playerEl.querySelector('.pm-audio-progress');
+        const progressFill = playerEl.querySelector('.pm-audio-progress-bar');
+        const volumeSlider = playerEl.querySelector('.pm-audio-volume');
+
+        let isPlaying = false;
+
+        // 全局音频管理器
+        if (!window.pmGlobalAudioManager) {
+            window.pmGlobalAudioManager = {
+                currentPlaying: null,
+                stopAll: function() {
+                    if (this.currentPlaying) {
+                        this.currentPlaying.stop();
+                    }
+                }
+            };
+        }
+
+        const stopThisAudio = () => {
+            audio.pause();
+            audio.currentTime = 0;
+            isPlaying = false;
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            progressFill.style.width = '0%';
+        };
+
+        const formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        const updateProgress = () => {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.width = `${percent}%`;
+                timeEl.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+            }
+        };
+
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isPlaying) {
+                audio.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                isPlaying = false;
+                window.pmGlobalAudioManager.currentPlaying = null;
+            } else {
+                // 停止其他正在播放的音频
+                window.pmGlobalAudioManager.stopAll();
+                // 播放当前音频
+                audio.play();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                isPlaying = true;
+                window.pmGlobalAudioManager.currentPlaying = { stop: stopThisAudio };
+            }
+        });
+
+        audio.addEventListener('timeupdate', updateProgress);
+        audio.addEventListener('loadedmetadata', () => {
+            timeEl.textContent = `0:00 / ${formatTime(audio.duration)}`;
+        });
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            progressFill.style.width = '0%';
+            timeEl.textContent = `0:00 / ${formatTime(audio.duration || 0)}`;
+        });
+
+        // 进度条拖动功能
+        let isDragging = false;
+
+        const updateProgressFromEvent = (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : rect.left);
+            let percent = (x - rect.left) / rect.width;
+            percent = Math.max(0, Math.min(1, percent));
+            return percent;
+        };
+
+        const handleStart = (e) => {
+            e.stopPropagation();
+            if (!audio.duration) return;
+            isDragging = true;
+            const percent = updateProgressFromEvent(e);
+            audio.currentTime = percent * audio.duration;
+            progressFill.style.width = `${percent * 100}%`;
+        };
+
+        const handleMove = (e) => {
+            if (!isDragging || !audio.duration) return;
+            e.stopPropagation();
+            e.preventDefault();
+            const percent = updateProgressFromEvent(e);
+            audio.currentTime = percent * audio.duration;
+            progressFill.style.width = `${percent * 100}%`;
+            timeEl.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+        };
+
+        const handleEnd = () => {
+            isDragging = false;
+        };
+
+        // 鼠标事件
+        progressBar.addEventListener('mousedown', handleStart);
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+
+        // 触摸事件（移动端支持）
+        progressBar.addEventListener('touchstart', handleStart, { passive: false });
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleEnd);
+
+        volumeSlider.addEventListener('input', (e) => {
+            e.stopPropagation();
+            audio.volume = e.target.value / 100;
+        });
+
+        playerEl._audio = audio;
     }
 
     async show() {
@@ -391,6 +611,12 @@ class PMInputDialog {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     详细信息
+                </div>
+                <div class="pm-context-menu-item" data-action="download">
+                    <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    下载
                 </div>
                 <div class="pm-context-menu-item" data-action="rename">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,6 +814,9 @@ class PMInputDialog {
             case 'show-info':
                 this.showInfoDialog(item);
                 break;
+            case 'download':
+                this.downloadItem(item);
+                break;
             case 'rename':
                 await this.renameItem(item);
                 break;
@@ -598,6 +827,18 @@ class PMInputDialog {
                 this.createNewFolder();
                 break;
         }
+    }
+
+    downloadItem(item) {
+        if (!item || item.type === 'folder') return;
+        
+        const downloadUrl = `/pm_input/preview/${encodeURIComponent(item.path)}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = item.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     
     renameItem(item) {
@@ -751,8 +992,8 @@ class PMInputDialog {
             }
             
             html += '</div>';
-            
-            this.infoDialog.querySelector('#pm-info-content').innerHTML = html;
+
+            this.infoDialog.querySelector('#pm-info-body').innerHTML = html;
             this.infoDialog.style.display = 'flex';
         } catch (error) {
             console.error('Get info error:', error);
@@ -782,25 +1023,52 @@ class PMInputDialog {
                     border-color: rgba(34, 197, 94, 0.4);
                     box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
                 }
+                .info-item {
+                    transition: all 0.2s ease;
+                }
+                .info-item:hover {
+                    background: rgba(255,255,255,0.05);
+                }
+                .info-label {
+                    color: var(--fg-light);
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-weight: 600;
+                }
+                .info-value {
+                    color: var(--fg);
+                    font-size: 14px;
+                    font-weight: 500;
+                }
             </style>
-            <div class="pm-info-overlay fixed inset-0 bg-black/60" id="pm-info-overlay"></div>
-            <div class="pm-info-content relative bg-gradient-to-br from-[var(--comfy-menu-bg)] to-[var(--comfy-input-bg)] border border-[var(--border-color)] rounded-2xl shadow-2xl w-full max-w-2xl p-6" style="max-height: 80vh; overflow-y: auto;">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">详细信息</h3>
-                    <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300">
+            <div class="pm-info-overlay fixed inset-0 bg-black/70 backdrop-blur-md" id="pm-info-overlay" style="z-index: 1;"></div>
+            <div class="pm-info-content relative border border-[var(--border-color)] rounded-3xl shadow-2xl w-full flex flex-col overflow-hidden" style="z-index: 2; background: linear-gradient(145deg, var(--comfy-menu-bg) 0%, var(--comfy-input-bg) 100%); max-width: 600px; max-height: 85vh;">
+                <div class="flex items-center justify-between px-6 py-5 border-b border-[var(--border-color)] bg-gradient-to-r from-transparent via-[var(--comfy-input-bg)]/30 to-transparent">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center shadow-lg">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent" id="pm-info-title">详细信息</h3>
+                    </div>
+                    <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
-                <div id="pm-info-content"></div>
+                <div id="pm-info-body" class="overflow-y-auto flex-grow p-6">
+                    <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                </div>
             </div>
         `;
         document.body.appendChild(this.infoDialog);
-        
+
         const closeBtn = this.infoDialog.querySelector('#pm-info-close');
         const overlay = this.infoDialog.querySelector('#pm-info-overlay');
-        
+
         closeBtn.addEventListener('click', () => this.hideInfoDialog());
         overlay.addEventListener('click', () => this.hideInfoDialog());
     }

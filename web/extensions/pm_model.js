@@ -338,7 +338,7 @@ class PMModelDialog {
                                         </div>`
                             }
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
-                                <button class="pm-model-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center" title="详细信息">
+                                <button class="pm-model-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="详细信息">
                                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
