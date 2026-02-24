@@ -50,6 +50,7 @@ class PMInputDialog {
         this.filterType = 'all';
         this.hideEmptyFolders = false;
         this.selectionCallback = null;
+        this.fixedFilter = null;
         this.init();
     }
 
@@ -615,11 +616,27 @@ class PMInputDialog {
     async show(options = {}) {
         this.hideEmptyFolders = options.hideEmptyFolders || false;
         this.selectionCallback = options.selectionCallback || null;
-        if (options.fixedFilter) {
-            this.filterType = options.fixedFilter;
+        this.fixedFilter = options.fixedFilter || null;
+        if (this.fixedFilter) {
+            this.filterType = this.fixedFilter;
         } else {
             this.filterType = 'all';
         }
+        
+        const filterSelect = this.dialog.querySelector('#pm-input-filter');
+        if (filterSelect) {
+            filterSelect.value = this.filterType;
+            if (this.fixedFilter) {
+                filterSelect.disabled = true;
+                filterSelect.style.opacity = '0.5';
+                filterSelect.style.cursor = 'not-allowed';
+            } else {
+                filterSelect.disabled = false;
+                filterSelect.style.opacity = '1';
+                filterSelect.style.cursor = 'pointer';
+            }
+        }
+        
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -627,6 +644,16 @@ class PMInputDialog {
     close() {
         this.dialog.style.display = 'none';
         this.hideContextMenu();
+        this.fixedFilter = null;
+        this.selectionCallback = null;
+        this.hideEmptyFolders = false;
+        
+        const filterSelect = this.dialog.querySelector('#pm-input-filter');
+        if (filterSelect) {
+            filterSelect.disabled = false;
+            filterSelect.style.opacity = '1';
+            filterSelect.style.cursor = 'pointer';
+        }
         this.hideInfoDialog();
     }
 
