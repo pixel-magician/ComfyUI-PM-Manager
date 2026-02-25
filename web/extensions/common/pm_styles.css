@@ -1270,4 +1270,25 @@
   margin: 4px 0;
 }
 
+/* 关闭按钮悬停动画样式 */
+#pm-input-close,
+#pm-model-close,
+#pm-output-close,
+#pm-workflow-close,
+#pm-info-close,
+#pm-metadata-close {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+#pm-input-close:hover,
+#pm-model-close:hover,
+#pm-output-close:hover,
+#pm-workflow-close:hover,
+#pm-info-close:hover,
+#pm-metadata-close:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 

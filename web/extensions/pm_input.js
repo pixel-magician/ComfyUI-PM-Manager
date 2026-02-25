@@ -152,7 +152,7 @@ class PMInputDialog {
                                 <p class="text-xs text-[var(--fg-light)]">管理您的输入资源（图片、音频、视频）</p>
                             </div>
                         </div>
-                        <button id="pm-input-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg">
+                        <button id="pm-input-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -385,7 +385,7 @@ class PMInputDialog {
                                                     </div>
                                                     <div class="pm-audio-player w-full" data-path="${item.path}">
                                                         <div class="flex items-center justify-center gap-3 mb-3">
-                                                            <button class="pm-audio-play-btn w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-105">
+                                                            <button class="pm-audio-play-btn w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border-0 flex items-center justify-center transition-all duration-200 hover:scale-105">
                                                                 <svg class="pm-audio-play-icon w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                                                                     <path d="M8 5v14l11-7z"/>
                                                                 </svg>
@@ -1177,7 +1177,7 @@ class PMInputDialog {
                         </div>
                         <h3 class="text-lg font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent" id="pm-info-title">详细信息</h3>
                     </div>
-                    <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg">
+                    <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>

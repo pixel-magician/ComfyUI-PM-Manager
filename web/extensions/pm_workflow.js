@@ -147,7 +147,7 @@ class PMWorkflowDialog {
                                 <p class="text-xs text-[var(--fg-light)]">管理和预览您的工作流</p>
                             </div>
                         </div>
-                        <button id="pm-workflow-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg">
+                        <button id="pm-workflow-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
