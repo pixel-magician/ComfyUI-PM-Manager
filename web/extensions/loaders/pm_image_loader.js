@@ -59,10 +59,13 @@ export async function openPMInputManagerForImage(node, directoryType = 'input') 
             // 设置 widget 的值为不带标注的文件名（用于显示）
             imageWidget.value = imagePath;
             
+            // 标记这是从PM管理器选择的文件
+            node._pm_selecting_file = true;
             // 触发 onValueChanged 回调，更新预览
             if (imageWidget.callback) {
               imageWidget.callback(imagePath);
             }
+            node._pm_selecting_file = false;
           }
         }
       }
@@ -210,6 +213,10 @@ app.registerExtension({
           imageWidget.callback = function(value) {
             if (originalCallback) {
               originalCallback.apply(this, arguments);
+            }
+            // 只有当不是从PM管理器选择文件时，才重置 directory_type 为 input
+            if (!node._pm_selecting_file) {
+              node.pm_directory_type = 'input';
             }
             // 更新内部保存的完整路径
             const type = node.pm_directory_type || 'input';
