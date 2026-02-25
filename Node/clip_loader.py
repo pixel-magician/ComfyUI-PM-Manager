@@ -3,16 +3,14 @@ from ..pm_utils import get_clip_path
 
 
 class PMClipLoader:
-    """PM CLIP加载器节点 - 使用PM Manager加载CLIP模型"""
-
     @classmethod
     def INPUT_TYPES(cls):
-        """定义节点输入类型"""
         return {
-            "required": {},
-            "hidden": {
-                "clips": ("PM_CLIPS",),  # 从PM Manager传入的CLIP列表
+            "required": {
             },
+            "hidden": {
+                "clips": ("PM_CLIPS",),
+            }
         }
 
     RETURN_TYPES = ("CLIP",)
@@ -20,53 +18,47 @@ class PMClipLoader:
     FUNCTION = "load_clip"
 
     CATEGORY = "PM Manager"
-    DESCRIPTION = (
-        "使用PM Manager加载CLIP模型，支持增强UI。支持多个模型但只加载选中的那个。"
-    )
+    DESCRIPTION = "Loads a CLIP model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one."
 
     def load_clip(self, clips=None, **kwargs):
-        """加载选中的CLIP模型"""
-        # 从widget处理clips - 单选模式
+        # Process clips from widget - single selection mode
         selected_clip = None
         if clips:
-            # 处理新格式 {'__value__': [...]} 和旧格式 [...]
-            if isinstance(clips, dict) and "__value__" in clips:
-                clips_list = clips["__value__"]
+            # Handle both new format {'__value__': [...]} and old format [...]
+            if isinstance(clips, dict) and '__value__' in clips:
+                clips_list = clips['__value__']
             elif isinstance(clips, list):
                 clips_list = clips
             else:
                 clips_list = []
 
-            # 查找选中的clip（只有一个可以被选中）
+            # Find the selected clip (only one can be selected)
             for clip in clips_list:
-                if clip.get("selected", False):
-                    selected_clip = clip.get("name", "")
+                if clip.get('selected', False):
+                    selected_clip = clip.get('name', '')
                     break
 
-            # 如果没有选中的，默认使用第一个
+            # If no selected one, use the first one as default
             if not selected_clip and clips_list:
-                selected_clip = clips_list[0].get("name", "")
+                selected_clip = clips_list[0].get('name', '')
 
         if not selected_clip:
-            raise ValueError("未选择CLIP模型")
+            raise ValueError("No CLIP model selected")
 
-        # 获取选中clip的完整路径
+        # Get full path for the selected clip
         clip_path = get_clip_path(selected_clip)
         if not clip_path:
-            raise ValueError(f"未找到CLIP模型: {selected_clip}")
+            raise ValueError(f"CLIP model not found: {selected_clip}")
 
-        # 使用ComfyUI加载CLIP
         clip = comfy.sd.load_clip(clip_path)
 
         return (clip,)
 
 
-# 节点类映射
 NODE_CLASS_MAPPINGS = {
     "PMClipLoader": PMClipLoader,
 }
 
-# 节点显示名称映射
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PMClipLoader": "PM Clip Loader",
 }

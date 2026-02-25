@@ -43,7 +43,6 @@ from .Node.video_loader import (
     NODE_DISPLAY_NAME_MAPPINGS as VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
 )
 
-# 合并所有节点类映射
 NODE_CLASS_MAPPINGS = {
     **UNET_NODE_CLASS_MAPPINGS,
     **LORA_NODE_CLASS_MAPPINGS,
@@ -53,7 +52,6 @@ NODE_CLASS_MAPPINGS = {
     **AUDIO_NODE_CLASS_MAPPINGS,
     **VIDEO_NODE_CLASS_MAPPINGS,
 }
-# 合并所有节点显示名称映射
 NODE_DISPLAY_NAME_MAPPINGS = {
     **UNET_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_NODE_DISPLAY_NAME_MAPPINGS,
@@ -70,21 +68,17 @@ __all__ = ["WEB_DIRECTORY", "NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 
 
 def get_user_id_from_request(request):
-    """从请求中获取用户ID"""
     from comfy.cli_args import args
 
     user = "default"
 
     try:
-        # 如果启用多用户模式，从请求头中获取用户ID
         if args.multi_user and "comfy-user" in request.headers:
             user = request.headers["comfy-user"]
 
-            # 系统用户前缀检查
             if user.startswith(folder_paths.SYSTEM_USER_PREFIX):
                 user = "default"
 
-        # 从PromptServer获取用户管理器
         from server import PromptServer
 
         if PromptServer.instance and hasattr(PromptServer.instance, "user_manager"):
@@ -93,7 +87,6 @@ def get_user_id_from_request(request):
                 if user in users:
                     return user
 
-                # 如果指定用户不存在，返回第一个用户
                 if len(users) > 0:
                     first_user = next(iter(users.keys()))
                     return first_user
@@ -106,7 +99,6 @@ def get_user_id_from_request(request):
 
 
 def get_pm_workflows_dir(user_id="default"):
-    """获取PM工作流目录"""
     user_dir = folder_paths.get_user_directory()
     user_workflow_dir = os.path.join(user_dir, user_id, "workflows")
     os.makedirs(user_workflow_dir, exist_ok=True)
@@ -114,22 +106,18 @@ def get_pm_workflows_dir(user_id="default"):
 
 
 def get_pm_models_dir():
-    """获取模型目录"""
     return folder_paths.models_dir
 
 
 def get_pm_input_dir():
-    """获取输入目录"""
     return folder_paths.get_input_directory()
 
 
 def get_pm_output_dir():
-    """获取输出目录"""
     return folder_paths.get_output_directory()
 
 
 def get_file_size(file_path):
-    """获取文件大小并格式化为人类可读格式"""
     size_bytes = os.path.getsize(file_path)
     for unit in ["B", "KB", "MB", "GB"]:
         if size_bytes < 1024.0:
@@ -139,7 +127,6 @@ def get_file_size(file_path):
 
 
 def load_pm_metadata(current_dir, name_without_ext):
-    """加载PM元数据文件"""
     pm_path = os.path.join(current_dir, f"{name_without_ext}.pm")
     metadata = {}
     if os.path.exists(pm_path):
@@ -152,7 +139,6 @@ def load_pm_metadata(current_dir, name_without_ext):
 
 
 def has_models_or_subfolders(dir_path):
-    """检查目录是否包含模型文件或子文件夹"""
     if not os.path.exists(dir_path):
         return False
 
@@ -173,7 +159,6 @@ def has_models_or_subfolders(dir_path):
 
 
 def has_media_or_subfolders(dir_path):
-    """检查目录是否包含媒体文件或子文件夹"""
     if not os.path.exists(dir_path):
         return False
 
@@ -211,7 +196,6 @@ def has_media_or_subfolders(dir_path):
 
 
 def scan_model_directory(base_dir, relative_path=""):
-    """扫描模型目录"""
     current_dir = os.path.join(base_dir, relative_path) if relative_path else base_dir
     items = []
 
@@ -258,7 +242,6 @@ def scan_model_directory(base_dir, relative_path=""):
 
 
 async def get_model_metadata(request):
-    """获取模型元数据"""
     model_path = request.match_info.get("path", "")
     model_path = urllib.parse.unquote(model_path)
 
@@ -278,7 +261,6 @@ async def get_model_metadata(request):
 
 
 async def save_model_metadata(request):
-    """保存模型元数据"""
     try:
         data = await request.json()
         model_path = data.get("path", "")
@@ -312,7 +294,6 @@ async def save_model_metadata(request):
 
 
 async def get_model_info(request):
-    """获取模型信息"""
     model_path = request.match_info.get("path", "")
     model_path = urllib.parse.unquote(model_path)
 
@@ -372,7 +353,6 @@ async def get_model_info(request):
 
 
 async def list_pm_models(request):
-    """列出所有模型"""
     pm_models_dir = get_pm_models_dir()
     path = request.rel_url.query.get("path", "")
     path = urllib.parse.unquote(path)
@@ -383,7 +363,6 @@ async def list_pm_models(request):
 
 
 async def get_pm_model_preview(request):
-    """获取模型预览图"""
     model_path = request.match_info.get("path", "")
     model_path = urllib.parse.unquote(model_path)
 
@@ -393,14 +372,14 @@ async def get_pm_model_preview(request):
     if os.path.exists(full_path):
         return web.FileResponse(full_path)
 
-    # 尝试查找模型文件及其预览图
+    # Try to find the model file and its preview
     lora_extensions = (".safetensors", ".pt", ".pth", ".bin", ".ckpt")
     found_model = None
 
     for root, dirs, files in os.walk(pm_models_dir):
         for file in files:
             if file.endswith(lora_extensions):
-                # 检查模型名称是否匹配（不带扩展名）
+                # Check if model name matches (without extension)
                 name_without_ext = os.path.splitext(file)[0]
                 if name_without_ext == model_path or file == model_path:
                     found_model = os.path.join(root, file)
@@ -409,7 +388,7 @@ async def get_pm_model_preview(request):
             break
 
     if found_model:
-        # 查找预览图
+        # Look for preview image
         parent_dir = os.path.dirname(found_model)
         name_without_ext = os.path.splitext(os.path.basename(found_model))[0]
 
@@ -422,7 +401,6 @@ async def get_pm_model_preview(request):
 
 
 async def replace_model_preview(request):
-    """替换模型预览图"""
     try:
         data = await request.post()
 
@@ -464,7 +442,6 @@ async def replace_model_preview(request):
 
 
 async def delete_pm_model(request):
-    """删除模型"""
     model_path = request.match_info.get("path", "")
     model_path = urllib.parse.unquote(model_path)
 
@@ -502,7 +479,6 @@ async def delete_pm_model(request):
 
 
 async def rename_pm_model(request):
-    """重命名模型"""
     try:
         data = await request.json()
         old_path = data.get("old_path", "")
@@ -555,7 +531,6 @@ async def rename_pm_model(request):
 
 
 async def new_model_folder(request):
-    """创建新模型文件夹"""
     try:
         data = await request.json()
         path = data.get("path", "")
@@ -581,7 +556,6 @@ async def new_model_folder(request):
 
 
 def scan_media_directory(base_dir, relative_path=""):
-    """扫描媒体目录"""
     current_dir = os.path.join(base_dir, relative_path) if relative_path else base_dir
     items = []
 
@@ -607,7 +581,7 @@ def scan_media_directory(base_dir, relative_path=""):
         has_audio = False
         has_video = False
         has_subfolder_with_content = False
-
+        
         try:
             for sub_entry in os.listdir(folder_path):
                 sub_entry_path = os.path.join(folder_path, sub_entry)
@@ -622,26 +596,19 @@ def scan_media_directory(base_dir, relative_path=""):
                 elif os.path.isdir(sub_entry_path):
                     # 递归检查子文件夹
                     sub_result = check_folder_content(sub_entry_path)
-                    if (
-                        sub_result["has_image"]
-                        or sub_result["has_audio"]
-                        or sub_result["has_video"]
-                    ):
+                    if sub_result["has_image"] or sub_result["has_audio"] or sub_result["has_video"]:
                         has_subfolder_with_content = True
                         has_image = has_image or sub_result["has_image"]
                         has_audio = has_audio or sub_result["has_audio"]
                         has_video = has_video or sub_result["has_video"]
         except:
             pass
-
+        
         return {
             "has_image": has_image,
             "has_audio": has_audio,
             "has_video": has_video,
-            "has_content": has_image
-            or has_audio
-            or has_video
-            or has_subfolder_with_content,
+            "has_content": has_image or has_audio or has_video or has_subfolder_with_content
         }
 
     for entry in os.listdir(current_dir):
@@ -702,7 +669,6 @@ def scan_media_directory(base_dir, relative_path=""):
 
 
 def scan_directory(base_dir, relative_path=""):
-    """扫描目录（用于工作流）"""
     current_dir = os.path.join(base_dir, relative_path) if relative_path else base_dir
     items = []
 
@@ -747,7 +713,6 @@ def scan_directory(base_dir, relative_path=""):
 
 
 async def list_pm_workflows(request):
-    """列出PM工作流"""
     user_id = get_user_id_from_request(request)
     pm_workflows_dir = get_pm_workflows_dir(user_id)
     path = request.rel_url.query.get("path", "")
@@ -759,7 +724,6 @@ async def list_pm_workflows(request):
 
 
 async def get_pm_workflow_preview(request):
-    """获取工作流预览图"""
     user_id = get_user_id_from_request(request)
     workflow_path = request.match_info.get("path", "")
     workflow_path = urllib.parse.unquote(workflow_path)
@@ -774,7 +738,6 @@ async def get_pm_workflow_preview(request):
 
 
 async def load_pm_workflow(request):
-    """加载工作流"""
     user_id = get_user_id_from_request(request)
     workflow_path = request.match_info.get("path", "")
     workflow_path = urllib.parse.unquote(workflow_path)
@@ -791,7 +754,6 @@ async def load_pm_workflow(request):
 
 
 async def save_pm_workflow(request):
-    """保存工作流"""
     user_id = get_user_id_from_request(request)
     data = await request.json()
     workflow_name = data.get("name", "")
@@ -814,7 +776,6 @@ async def save_pm_workflow(request):
 
 
 async def delete_pm_workflow(request):
-    """删除工作流"""
     user_id = get_user_id_from_request(request)
     workflow_path = request.match_info.get("path", "")
     workflow_path = urllib.parse.unquote(workflow_path)
@@ -851,7 +812,6 @@ async def delete_pm_workflow(request):
 
 
 async def rename_pm_workflow(request):
-    """重命名工作流"""
     try:
         user_id = get_user_id_from_request(request)
         data = await request.json()
@@ -902,7 +862,6 @@ async def rename_pm_workflow(request):
 
 
 async def replace_preview(request):
-    """替换预览图"""
     try:
         user_id = get_user_id_from_request(request)
 
@@ -946,7 +905,6 @@ async def replace_preview(request):
 
 
 async def new_folder(request):
-    """创建新文件夹"""
     try:
         user_id = get_user_id_from_request(request)
         data = await request.json()
@@ -973,7 +931,6 @@ async def new_folder(request):
 
 
 async def new_workflow(request):
-    """创建新工作流"""
     try:
         user_id = get_user_id_from_request(request)
         data = await request.json()
@@ -997,7 +954,6 @@ async def new_workflow(request):
         if workflow_name.endswith(".json"):
             workflow_name = workflow_name[:-5]
 
-        # 创建空工作流结构
         empty_workflow = {
             "nodes": [],
             "links": [],
@@ -1019,7 +975,6 @@ async def new_workflow(request):
 
 
 async def list_pm_input(request):
-    """列出输入目录内容"""
     pm_input_dir = get_pm_input_dir()
     path = request.rel_url.query.get("path", "")
     path = urllib.parse.unquote(path)
@@ -1030,7 +985,6 @@ async def list_pm_input(request):
 
 
 async def list_pm_output(request):
-    """列出输出目录内容"""
     pm_output_dir = get_pm_output_dir()
     path = request.rel_url.query.get("path", "")
     path = urllib.parse.unquote(path)
@@ -1041,7 +995,6 @@ async def list_pm_output(request):
 
 
 async def get_pm_input_preview(request):
-    """获取输入文件预览"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1055,7 +1008,6 @@ async def get_pm_input_preview(request):
 
 
 async def get_pm_output_preview(request):
-    """获取输出文件预览"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1069,7 +1021,6 @@ async def get_pm_output_preview(request):
 
 
 async def delete_pm_input(request):
-    """删除输入文件"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1088,7 +1039,6 @@ async def delete_pm_input(request):
 
 
 async def delete_pm_output(request):
-    """删除输出文件"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1107,7 +1057,6 @@ async def delete_pm_output(request):
 
 
 async def rename_pm_input(request):
-    """重命名输入文件"""
     try:
         data = await request.json()
         old_path = data.get("old_path", "")
@@ -1137,7 +1086,6 @@ async def rename_pm_input(request):
 
 
 async def rename_pm_output(request):
-    """重命名输出文件"""
     try:
         data = await request.json()
         old_path = data.get("old_path", "")
@@ -1167,7 +1115,6 @@ async def rename_pm_output(request):
 
 
 async def new_input_folder(request):
-    """在输入目录创建新文件夹"""
     try:
         data = await request.json()
         path = data.get("path", "")
@@ -1193,7 +1140,6 @@ async def new_input_folder(request):
 
 
 async def new_output_folder(request):
-    """在输出目录创建新文件夹"""
     try:
         data = await request.json()
         path = data.get("path", "")
@@ -1219,7 +1165,6 @@ async def new_output_folder(request):
 
 
 async def get_pm_input_info(request):
-    """获取输入文件信息"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1271,7 +1216,6 @@ async def get_pm_input_info(request):
 
 
 async def get_pm_output_info(request):
-    """获取输出文件信息"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
@@ -1323,7 +1267,6 @@ async def get_pm_output_info(request):
 
 
 def setup_routes():
-    """设置所有路由"""
     from server import PromptServer
 
     @PromptServer.instance.routes.get("/pm_workflow/list")
@@ -1452,7 +1395,6 @@ def setup_routes():
 
 
 async def get_pm_output_metadata(request):
-    """获取输出文件的元数据（用于图像文件）"""
     media_path = request.match_info.get("path", "")
     media_path = urllib.parse.unquote(media_path)
 
