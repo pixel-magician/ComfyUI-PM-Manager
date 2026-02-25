@@ -231,28 +231,33 @@ app.registerExtension({
           originalOnConfigure.apply(this, arguments);
         }
         
-        if (info.widgets_values && info.widgets_values.length > 0) {
-          const savedValue = info.widgets_values[0];
-          if (savedValue) {
-            this.pm_selected_image = savedValue;
-            // 根据保存的值确定目录类型
-            const dirType = getPathType(savedValue);
-            this.pm_directory_type = dirType;
-            
-            // 恢复 widget 的显示值（不带标注）
-            const imageWidget = this.widgets.find(w => w.name === 'image');
-            if (imageWidget) {
-              imageWidget.value = getDisplayFilename(savedValue);
-            }
-            
-            // 恢复后更新预览
-            setTimeout(() => {
-              const previewWidget = this.widgets?.find(w => w.name === "imagepreview");
-              if (previewWidget && previewWidget.updateSource) {
-                previewWidget.updateSource();
-              }
-            }, 100);
+        // 优先从 pm_selected_image 读取带标注的完整路径
+        let savedValue = info.pm_selected_image;
+        
+        // 如果没有 pm_selected_image，则尝试从 widgets_values 读取
+        if (!savedValue && info.widgets_values && info.widgets_values.length > 0) {
+          savedValue = info.widgets_values[0];
+        }
+        
+        if (savedValue) {
+          this.pm_selected_image = savedValue;
+          // 根据保存的值确定目录类型
+          const dirType = getPathType(savedValue);
+          this.pm_directory_type = dirType;
+          
+          // 恢复 widget 的显示值（不带标注）
+          const imageWidget = this.widgets.find(w => w.name === 'image');
+          if (imageWidget) {
+            imageWidget.value = getDisplayFilename(savedValue);
           }
+          
+          // 恢复后更新预览
+          setTimeout(() => {
+            const previewWidget = this.widgets?.find(w => w.name === "imagepreview");
+            if (previewWidget && previewWidget.updateSource) {
+              previewWidget.updateSource();
+            }
+          }, 100);
         }
       };
       
