@@ -57,9 +57,13 @@ export async function openPMInputManagerForAudio(node, directoryType = 'input') 
           if (audioWidget) {
             audioWidget.value = audioPath;
             node.pm_selected_audio = audioPath;
+            node.pm_directory_type = directoryType;
+            // 标记这是从PM管理器选择的文件
+            node._pm_selecting_file = true;
             if (audioWidget.callback) {
               audioWidget.callback(audioPath);
             }
+            node._pm_selecting_file = false;
           }
         }
       }
@@ -179,20 +183,24 @@ app.registerExtension({
         
         const updateAudioSource = (filename) => {
             if (filename) {
-                previewWidget.value.params = { filename: filename, type: "input" };
+                previewWidget.value.params = { filename: filename, type: node.pm_directory_type || "input" };
                 previewWidget.updateSource();
             }
         };
-        
+
         if (pathWidget) {
             const originalCallback = pathWidget.callback;
             pathWidget.callback = function(filename) {
                 if (originalCallback) {
                     originalCallback.call(this, filename);
                 }
+                // 只有当不是从PM管理器选择文件时，才重置 directory_type 为 input
+                if (!node._pm_selecting_file) {
+                    node.pm_directory_type = "input";
+                }
                 updateAudioSource(filename);
             };
-            
+
             if (pathWidget.value) {
                 updateAudioSource(pathWidget.value);
             }
@@ -204,12 +212,28 @@ app.registerExtension({
         if (originalOnConfigure) {
           originalOnConfigure.apply(this, arguments);
         }
-        
+
+        // 恢复 directory_type
+        if (info.pm_directory_type) {
+          this.pm_directory_type = info.pm_directory_type;
+        }
+
         if (info.widgets_values && info.widgets_values.length > 0) {
           const savedValue = info.widgets_values[0];
           if (savedValue) {
             this.pm_selected_audio = savedValue;
           }
+        }
+      };
+
+      // 保存 directory_type 到序列化数据
+      const originalOnSerialize = nodeType.prototype.onSerialize;
+      nodeType.prototype.onSerialize = function(info) {
+        if (originalOnSerialize) {
+          originalOnSerialize.apply(this, arguments);
+        }
+        if (this.pm_directory_type) {
+          info.pm_directory_type = this.pm_directory_type;
         }
       };
     }
