@@ -59,9 +59,12 @@ export async function openPMInputManagerForVideo(node, directoryType = 'input') 
             videoWidget.value = videoPath;
             node.pm_selected_video = videoPath;
             node.pm_directory_type = directoryType;
+            // 标记这是从PM管理器选择的文件，不是手动切换下拉框
+            node._pm_selecting_file = true;
             if (videoWidget.callback) {
               videoWidget.callback(videoPath);
             }
+            node._pm_selecting_file = false;
           }
         }
       }
@@ -728,9 +731,14 @@ app.registerExtension({
             if (originalCallback) {
               originalCallback.call(this, filename);
             }
+            // 只有当不是从PM管理器选择文件时，才重置 directory_type 为 input
+            // 因为下拉框中的文件默认都来自 input 目录
+            if (!node._pm_selecting_file) {
+              node.pm_directory_type = "input";
+            }
             updateVideoSource(filename);
           };
-          
+
           if (pathWidget.value) {
             setTimeout(() => {
               updateVideoSource(pathWidget.value);
@@ -744,12 +752,17 @@ app.registerExtension({
         if (originalOnConfigure) {
           originalOnConfigure.apply(this, arguments);
         }
-        
+
+        // 恢复 directory_type
+        if (info.pm_directory_type) {
+          this.pm_directory_type = info.pm_directory_type;
+        }
+
         if (info.widgets_values && info.widgets_values.length > 0) {
           const savedValue = info.widgets_values[0];
           if (savedValue) {
             this.pm_selected_video = savedValue;
-            
+
             setTimeout(() => {
               const pathWidget = this.widgets?.find((w) => w.name === "video");
               if (pathWidget && pathWidget.value) {
@@ -757,8 +770,8 @@ app.registerExtension({
                   if (filename) {
                     const previewWidget = this.widgets?.find((w) => w.name === "videopreview");
                     if (previewWidget) {
-                      previewWidget.value.params = { 
-                        filename: filename, 
+                      previewWidget.value.params = {
+                        filename: filename,
                         type: this.pm_directory_type || "input",
                         force_rate: this.widgets?.find((w) => w.name === "force_rate")?.value,
                         frame_load_cap: this.widgets?.find((w) => w.name === "frame_load_cap")?.value,
@@ -775,6 +788,17 @@ app.registerExtension({
               }
             }, 100);
           }
+        }
+      };
+
+      // 保存 directory_type 到序列化数据
+      const originalOnSerialize = nodeType.prototype.onSerialize;
+      nodeType.prototype.onSerialize = function(info) {
+        if (originalOnSerialize) {
+          originalOnSerialize.apply(this, arguments);
+        }
+        if (this.pm_directory_type) {
+          info.pm_directory_type = this.pm_directory_type;
         }
       };
     }
