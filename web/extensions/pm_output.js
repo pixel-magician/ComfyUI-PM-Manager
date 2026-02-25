@@ -550,6 +550,11 @@ class PMOutputDialog {
             const percent = updateProgressFromEvent(e);
             audio.currentTime = percent * audio.duration;
             progressFill.style.width = `${percent * 100}%`;
+            // 开始拖动时添加全局事件监听
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchmove', handleMove, { passive: false });
+            document.addEventListener('touchend', handleEnd);
         };
 
         const handleMove = (e) => {
@@ -563,18 +568,20 @@ class PMOutputDialog {
         };
 
         const handleEnd = () => {
+            if (!isDragging) return;
             isDragging = false;
+            // 拖动结束时移除全局事件监听
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleEnd);
         };
 
         // 鼠标事件
         progressBar.addEventListener('mousedown', handleStart);
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
 
         // 触摸事件（移动端支持）
-        progressBar.addEventListener('touchstart', handleStart, { passive: false });
-        document.addEventListener('touchmove', handleMove, { passive: false });
-        document.addEventListener('touchend', handleEnd);
+        progressBar.addEventListener('touchstart', handleStart, { passive: true });
 
         volumeSlider.addEventListener('input', (e) => {
             e.stopPropagation();
@@ -585,6 +592,7 @@ class PMOutputDialog {
     }
 
     async show() {
+        this.setupContextMenuEvents();
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -598,7 +606,6 @@ class PMOutputDialog {
     createContextMenu() {
         this.contextMenu = document.createElement('div');
         this.contextMenu.className = 'pm-context-menu';
-        this.setupContextMenuEvents();
     }
 
     updateContextMenu(isItemMenu, isImage = false) {
@@ -776,16 +783,19 @@ class PMOutputDialog {
     }
 
     setupContextMenuEvents() {
-        document.addEventListener('click', (e) => {
+        if (this._contextMenuClickHandler) return;
+        this._contextMenuClickHandler = (e) => {
             if (this.contextMenu.classList.contains('show') && !this.contextMenu.contains(e.target)) {
                 this.hideContextMenu();
             }
-        });
-        document.addEventListener('contextmenu', (e) => {
+        };
+        this._contextMenuContextHandler = (e) => {
             if (this.contextMenu.classList.contains('show') && !this.dialog.contains(e.target) && !this.contextMenu.contains(e.target)) {
                 this.hideContextMenu();
             }
-        });
+        };
+        document.addEventListener('click', this._contextMenuClickHandler);
+        document.addEventListener('contextmenu', this._contextMenuContextHandler);
     }
 
     showContextMenu(x, y, item = null) {

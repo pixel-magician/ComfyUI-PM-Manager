@@ -16,7 +16,7 @@ export class PreviewTooltip {
     document.addEventListener("click", this.globalClickHandler);
 
     this.globalScrollHandler = () => this.hide();
-    document.addEventListener("scroll", this.globalScrollHandler, true);
+    document.addEventListener("scroll", this.globalScrollHandler, { passive: true, capture: true });
   }
 
   async resolvePreviewUrl(modelName) {

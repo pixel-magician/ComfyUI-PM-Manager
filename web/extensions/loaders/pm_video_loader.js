@@ -1,6 +1,5 @@
 import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
-import { setWidgetConfig } from "/extensions/core/widgetInputs.js";
 
 let pmInputManagerCache = null;
 

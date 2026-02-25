@@ -45,7 +45,7 @@ export function setupNode(node, config) {
     widgetPropertyName,
     {},
     (value) => {
-      console.log(`${widgetPropertyName} widget value changed:`, value);
+      // Widget value changed callback
     }
   ).widget;
 }

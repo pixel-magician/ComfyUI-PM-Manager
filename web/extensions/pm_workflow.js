@@ -366,6 +366,7 @@ class PMWorkflowDialog {
     }
 
     async show() {
+        this.setupContextMenuEvents();
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -378,7 +379,6 @@ class PMWorkflowDialog {
     createContextMenu() {
         this.contextMenu = document.createElement('div');
         this.contextMenu.className = 'pm-context-menu';
-        this.setupContextMenuEvents();
     }
 
     updateContextMenu(isItemMenu) {
@@ -541,16 +541,19 @@ class PMWorkflowDialog {
     }
 
     setupContextMenuEvents() {
-        document.addEventListener('click', (e) => {
+        if (this._contextMenuClickHandler) return;
+        this._contextMenuClickHandler = (e) => {
             if (this.contextMenu.classList.contains('show') && !this.contextMenu.contains(e.target)) {
                 this.hideContextMenu();
             }
-        });
-        document.addEventListener('contextmenu', (e) => {
+        };
+        this._contextMenuContextHandler = (e) => {
             if (this.contextMenu.classList.contains('show') && !this.dialog.contains(e.target) && !this.contextMenu.contains(e.target)) {
                 this.hideContextMenu();
             }
-        });
+        };
+        document.addEventListener('click', this._contextMenuClickHandler);
+        document.addEventListener('contextmenu', this._contextMenuContextHandler);
     }
 
     showContextMenu(x, y, item = null) {
