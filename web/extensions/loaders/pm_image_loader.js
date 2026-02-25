@@ -16,11 +16,6 @@ function findPMInputManager() {
   return null;
 }
 
-function fitHeight(node) {
-  node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
-  node?.graph?.setDirtyCanvas(true);
-}
-
 // 获取不带标注的文件名（用于显示）
 function getDisplayFilename(annotatedPath) {
   if (!annotatedPath) return '';
@@ -101,86 +96,111 @@ app.registerExtension({
           await openPMInputManagerForImage(this, 'output');
         });
         
-        // 创建图片预览元素（在按钮之后添加，所以会显示在底部）
-        var container = document.createElement("div");
-        container.style.marginTop = "10px";
-        
-        var element = document.createElement("img");
-        element.style.width = "100%";
-        element.style.height = "auto";
-        element.style.display = "block";
-        // 不设置 borderRadius，保持直角
-        container.appendChild(element);
-        
-        // 创建尺寸显示元素
-        var sizeInfo = document.createElement("div");
-        sizeInfo.style.textAlign = "center";
-        sizeInfo.style.fontSize = "12px";
-        sizeInfo.style.color = "var(--fg)";
-        sizeInfo.style.marginTop = "5px";
-        sizeInfo.style.padding = "2px 0";
-        container.appendChild(sizeInfo);
-        
-        const previewNode = this;
-        var previewWidget = this.addDOMWidget("imagepreview", "preview", container, {
-          serialize: false,
-          hideOnZoom: true,
-          getValue() {
-            return element.src;
-          },
-          setValue(v) {
-            element.src = v;
-          },
-        });
-        
-        previewWidget.computeSize = function(width) {
-          if (this.aspectRatio && !container.hidden) {
-            let height = (previewNode.size[0] - 20) / this.aspectRatio + 10;
-            if (!(height > 0)) {
-              height = 0;
-            }
-            // 加上尺寸信息的高度
-            this.computedHeight = height + 25;
-            return [width, this.computedHeight];
+        // 创建图片预览 Widget (参照 rgthree 的 Canvas 实现)
+        class PMPreviewWidget {
+          constructor(node) {
+            this.name = "imagepreview";
+            this.type = "custom";
+            this.node = node;
+            this.image = new Image();
+            this.imageLoaded = false;
+            this.options = { serialize: false };
+            
+            this.image.onload = () => {
+              this.imageLoaded = true;
+              node.setDirtyCanvas(true, true);
+            };
+            
+            this.image.onerror = () => {
+              this.imageLoaded = false;
+              node.setDirtyCanvas(true, true);
+            };
           }
-          return [width, -4];
-        };
+
+          draw(ctx, node, widgetWidth, y, widgetHeight) {
+            if (!this.imageLoaded || !this.image.src) {
+              return;
+            }
+
+            const img = this.image;
+            const nodeWidth = node.size[0];
+            const textHeight = 20; // 预留给文字的高度
+            const padding = 2; // 底部留白
+            
+            // 计算可用高度：节点高度 - 当前 widget 的 y 坐标 - 文字高度 - 底部留白
+            const availableHeight = node.size[1] - y - textHeight - padding; 
+            
+            if (availableHeight <= 0) return;
+
+            // 保持比例适应 (Contain 逻辑)
+            const imageAspect = img.naturalWidth / img.naturalHeight;
+            const widgetAspect = nodeWidth / availableHeight;
+            
+            let targetWidth, targetHeight;
+            
+            if (imageAspect > widgetAspect) {
+              targetWidth = nodeWidth;
+              targetHeight = nodeWidth / imageAspect;
+            } else {
+              targetHeight = availableHeight;
+              targetWidth = availableHeight * imageAspect;
+            }
+            
+            // 居中计算
+            const destX = (nodeWidth - targetWidth) / 2;
+            // 垂直居中于可用区域
+            const destY = y + (availableHeight - targetHeight) / 2;
+
+            ctx.save();
+            ctx.drawImage(img, destX, destY, targetWidth, targetHeight);
+            
+            // 绘制尺寸信息（在图片下方）
+            // 文字颜色跟随主题，默认使用 widget 文本颜色
+            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR || "#AAA";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "center";
+            // 绘制位置：图片区域结束位置 + 文字高度的一半（垂直居中）
+            ctx.fillText(`${img.naturalWidth} x ${img.naturalHeight}`, nodeWidth / 2, destY + targetHeight + 14);
+            ctx.restore();
+          }
+
+          computeSize(width) {
+            // 返回一个最小高度，确保节点不会太小，但允许用户拉大
+            // 确保有足够的空间显示文字和图片
+            return [width, 230];
+          }
+
+          updateSource(url) {
+             if (this.image.src !== url) {
+                this.image.src = url;
+             }
+          }
+        }
+
+        const previewWidget = new PMPreviewWidget(this);
+        this.addCustomWidget(previewWidget);
         
-        element.addEventListener("load", () => {
-          previewWidget.aspectRatio = element.naturalWidth / element.naturalHeight;
-          // 更新尺寸信息
-          sizeInfo.textContent = `${element.naturalWidth} x ${element.naturalHeight}`;
-          fitHeight(previewNode);
-        });
-        
-        element.addEventListener("error", () => {
-          container.hidden = true;
-          sizeInfo.textContent = '';
-          fitHeight(previewNode);
-        });
-        
+        // 兼容旧代码的 updateSource 调用
         previewWidget.updateSource = function() {
           const imageWidget = node.widgets.find(w => w.name === 'image');
           if (!imageWidget || !imageWidget.value) {
-            container.hidden = true;
-            sizeInfo.textContent = '';
+            this.image.src = "";
+            this.imageLoaded = false;
             return;
           }
           
-          // 使用 widget 的显示值（不带标注）
           const filename = imageWidget.value;
           const type = node.pm_directory_type || "input";
           
-          // 使用 ComfyUI 的 view API 加载图片
           const params = new URLSearchParams({
             filename: filename,
             type: type,
             rand: Math.random()
           });
           
-          element.src = api.apiURL('/view?' + params.toString());
-          container.hidden = false;
-          fitHeight(previewNode);
+          const url = api.apiURL('/view?' + params.toString());
+          // 调用类方法更新
+          PMPreviewWidget.prototype.updateSource.call(this, url);
         };
         
         // 监听 widget 值变化，更新预览
