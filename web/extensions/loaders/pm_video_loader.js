@@ -505,14 +505,27 @@ app.registerExtension({
           await openPMInputManagerForVideo(this, 'output');
         });
         
+        // 创建视频预览容器，使用 Canvas 尺寸逻辑
         var container = document.createElement("div");
+        container.style.width = "100%";
+        container.style.height = "100%";
+        container.style.display = "flex";
+        container.style.flexDirection = "column";
+        container.style.alignItems = "center";
+        container.style.justifyContent = "center";
+        container.style.overflow = "hidden";
+        container.style.visibility = "hidden"; // 加载完成前隐藏
+        
         var element = document.createElement("video");
         element.controls = true;
         element.autoplay = true;
         element.loop = true;
         element.muted = true;
-        element.style.width = "100%";
+        element.style.width = "100%";  // 宽度填满节点
+        element.style.height = "100%";
+        element.style.objectFit = "contain"; // 保持比例适应
         container.appendChild(element);
+        
         const previewNode = this;
         var previewWidget = this.addDOMWidget("videopreview", "preview", container, {
           serialize: false,
@@ -524,28 +537,66 @@ app.registerExtension({
             element.value = v;
           },
         });
+        
+        // 使用类似图片加载器的尺寸计算逻辑
         previewWidget.computeSize = function(width) {
           if (this.aspectRatio && !container.hidden) {
-            let height = (previewNode.size[0]-20)/ this.aspectRatio + 10;
+            // 参考图片加载器的逻辑：最小高度 230，宽度自适应
+            let height = width / this.aspectRatio;
             if (!(height > 0)) {
-              height = 0;
+              height = 230;
             }
-            this.computedHeight = height + 10;
+            // 确保最小高度
+            if (height < 230) {
+              height = 230;
+            }
+            this.computedHeight = height;
             return [width, height];
           }
-          return [width, -4];
+          return [width, 230];
         };
+        
+        // 更新视频容器高度的函数
+        const updateContainerHeight = () => {
+          if (previewWidget && container) {
+            const widgetY = previewWidget.y || 0;
+            const otherWidgetsHeight = widgetY + 30; // 预览图上方控件高度 + 底部留白
+            const availableHeight = Math.max(230, previewNode.size[1] - otherWidgetsHeight);
+            container.style.height = availableHeight + "px";
+          }
+        };
+        
+        // 监听节点尺寸变化，更新视频容器高度
+        const originalOnResize = this.onResize;
+        this.onResize = function(size) {
+          if (originalOnResize) {
+            originalOnResize.apply(this, arguments);
+          }
+          updateContainerHeight();
+        };
+        
         element.addEventListener("loadedmetadata", () => {
           previewWidget.aspectRatio = element.videoWidth / element.videoHeight;
-          fitHeight(previewNode);
+          // 显示容器
+          container.style.visibility = "visible";
+          // 只在首次加载或节点高度过小时调整高度，避免切换视频时重置高度
+          const minRequiredHeight = previewWidget.computedHeight + 200; // 预览图高度 + 其他控件高度
+          if (previewNode.size[1] < minRequiredHeight) {
+            fitHeight(previewNode);
+          }
+          // 更新容器高度以适配当前节点高度
+          setTimeout(updateContainerHeight, 0);
         });
+        
         element.addEventListener("error", () => {
           container.hidden = true;
-          fitHeight(previewNode);
         });
         
         previewWidget.value = { params: {} };
         previewWidget.updateSource = function () {
+          // 切换视频源时先隐藏容器，等加载完成后再显示
+          container.style.visibility = "hidden";
+          
           if (!this.value.params || !this.value.params.filename) {
             return;
           }
