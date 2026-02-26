@@ -763,6 +763,12 @@ class PMInputDialog {
             `;
         } else if (!this.disableNewFolder) {
             this.contextMenu.innerHTML = `
+                <div class="pm-context-menu-item" data-action="upload-file">
+                    <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    上传文件
+                </div>
                 <div class="pm-context-menu-item" data-action="new-folder">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
@@ -960,6 +966,54 @@ class PMInputDialog {
             case 'new-folder':
                 this.createNewFolder();
                 break;
+            case 'upload-file':
+                this.uploadFile();
+                break;
+        }
+    }
+    
+    uploadFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*,audio/*,video/*';
+        
+        input.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (files.length === 0) return;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                await this.uploadSingleFile(file);
+            }
+            
+            await this.loadItems(this.currentPath);
+        });
+        
+        input.click();
+    }
+    
+    async uploadSingleFile(file) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const url = `${this.getUrlPrefix()}/upload?path=${encodeURIComponent(this.currentPath)}`;
+            const response = await fetchWithUser(url, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+            
+            const result = await response.json();
+            console.log(`Uploaded: ${result.filename} (${result.size} bytes)`);
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showPromptDialog('错误', '上传失败: ' + error.message, '', () => {});
         }
     }
 

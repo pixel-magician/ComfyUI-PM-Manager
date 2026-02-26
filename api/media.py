@@ -382,3 +382,89 @@ async def get_pm_output_metadata(request):
         return web.json_response(metadata)
     except Exception as e:
         return web.Response(status=500, text=str(e))
+
+
+async def upload_pm_input(request):
+    try:
+        reader = await request.multipart()
+        field = await reader.next()
+        
+        if field.name == 'file':
+            filename = field.filename
+            path = request.rel_url.query.get("path", "")
+            path = urllib.parse.unquote(path)
+            
+            pm_input_dir = get_pm_input_dir()
+            target_dir = os.path.join(pm_input_dir, path) if path else pm_input_dir
+            
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            
+            file_path = os.path.join(target_dir, filename)
+            
+            if os.path.exists(file_path):
+                name, ext = os.path.splitext(filename)
+                counter = 1
+                while os.path.exists(os.path.join(target_dir, f"{name}_{counter}{ext}")):
+                    counter += 1
+                filename = f"{name}_{counter}{ext}"
+                file_path = os.path.join(target_dir, filename)
+            
+            size = 0
+            with open(file_path, 'wb') as f:
+                while True:
+                    chunk = await field.read_chunk()
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    f.write(chunk)
+            
+            return web.json_response({"success": True, "filename": filename, "size": size})
+        else:
+            return web.Response(status=400, text="Missing file field")
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        return web.Response(status=500, text=str(e))
+
+
+async def upload_pm_output(request):
+    try:
+        reader = await request.multipart()
+        field = await reader.next()
+        
+        if field.name == 'file':
+            filename = field.filename
+            path = request.rel_url.query.get("path", "")
+            path = urllib.parse.unquote(path)
+            
+            pm_output_dir = get_pm_output_dir()
+            target_dir = os.path.join(pm_output_dir, path) if path else pm_output_dir
+            
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            
+            file_path = os.path.join(target_dir, filename)
+            
+            if os.path.exists(file_path):
+                name, ext = os.path.splitext(filename)
+                counter = 1
+                while os.path.exists(os.path.join(target_dir, f"{name}_{counter}{ext}")):
+                    counter += 1
+                filename = f"{name}_{counter}{ext}"
+                file_path = os.path.join(target_dir, filename)
+            
+            size = 0
+            with open(file_path, 'wb') as f:
+                while True:
+                    chunk = await field.read_chunk()
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    f.write(chunk)
+            
+            return web.json_response({"success": True, "filename": filename, "size": size})
+        else:
+            return web.Response(status=400, text="Missing file field")
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        return web.Response(status=500, text=str(e))

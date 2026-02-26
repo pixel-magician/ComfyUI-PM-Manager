@@ -29,6 +29,7 @@ from .media import (
     delete_pm_input,
     rename_pm_input,
     new_input_folder,
+    upload_pm_input,
     list_pm_output,
     get_pm_output_preview,
     get_pm_output_info,
@@ -36,6 +37,7 @@ from .media import (
     rename_pm_output,
     new_output_folder,
     get_pm_output_metadata,
+    upload_pm_output,
 )
 
 __all__ = [
@@ -66,6 +68,7 @@ __all__ = [
     "delete_pm_input",
     "rename_pm_input",
     "new_input_folder",
+    "upload_pm_input",
     "list_pm_output",
     "get_pm_output_preview",
     "get_pm_output_info",
@@ -73,4 +76,5 @@ __all__ = [
     "rename_pm_output",
     "new_output_folder",
     "get_pm_output_metadata",
+    "upload_pm_output",
 ]

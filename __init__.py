@@ -91,6 +91,7 @@ def setup_routes():
         delete_pm_input,
         rename_pm_input,
         new_input_folder,
+        upload_pm_input,
         list_pm_output,
         get_pm_output_preview,
         get_pm_output_info,
@@ -98,6 +99,7 @@ def setup_routes():
         rename_pm_output,
         new_output_folder,
         get_pm_output_metadata,
+        upload_pm_output,
     )
 
     # Workflow routes
@@ -199,6 +201,10 @@ def setup_routes():
     async def new_input_folder_route(request):
         return await new_input_folder(request)
 
+    @PromptServer.instance.routes.post("/pm_input/upload")
+    async def upload_input_route(request):
+        return await upload_pm_input(request)
+
     # Output routes
     @PromptServer.instance.routes.get("/pm_output/list")
     async def list_output_route(request):
@@ -227,6 +233,10 @@ def setup_routes():
     @PromptServer.instance.routes.get("/pm_output/metadata/{path:.*}")
     async def get_output_metadata_route(request):
         return await get_pm_output_metadata(request)
+
+    @PromptServer.instance.routes.post("/pm_output/upload")
+    async def upload_output_route(request):
+        return await upload_pm_output(request)
 
 
 # 初始化路由
