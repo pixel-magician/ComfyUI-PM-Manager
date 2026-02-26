@@ -4,11 +4,12 @@ import hashlib
 import torch
 import subprocess
 import re
+from comfy_api.latest import IO
 
 
-class PMLoadAudio:
+class PMLoadAudio(IO.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def define_schema(cls) -> IO.Schema:
         input_dir = folder_paths.get_input_directory()
         files = [
             f
@@ -16,26 +17,31 @@ class PMLoadAudio:
             if os.path.isfile(os.path.join(input_dir, f))
         ]
         files = folder_paths.filter_files_content_types(files, ["audio"])
-        return {
-            "required": {"audio": (sorted(files),)},
-        }
 
-    CATEGORY = "PM Manager"
-    SEARCH_ALIASES = [
-        "load audio",
-        "open audio",
-        "import audio",
-        "audio input",
-        "upload audio",
-        "read audio",
-        "audio loader",
-        "pm load audio",
-    ]
+        return IO.Schema(
+            node_id="PMLoadAudio",
+            display_name="PM Audio Loader",
+            category="PM Manager",
+            search_aliases=[
+                "load audio",
+                "open audio",
+                "import audio",
+                "audio input",
+                "upload audio",
+                "read audio",
+                "audio loader",
+                "pm load audio",
+            ],
+            inputs=[
+                IO.Combo.Input("audio", options=sorted(files)),
+            ],
+            outputs=[
+                IO.Audio.Output("audio"),
+            ],
+        )
 
-    RETURN_TYPES = ("AUDIO",)
-    FUNCTION = "load_audio"
-
-    def load_audio(self, audio):
+    @classmethod
+    def execute(cls, audio) -> IO.NodeOutput:
         audio_path = folder_paths.get_annotated_filepath(audio)
 
         args = ["ffmpeg", "-i", audio_path]
@@ -62,10 +68,10 @@ class PMLoadAudio:
 
         audio_data = audio_data.reshape((-1, ac)).transpose(0, 1).unsqueeze(0)
 
-        return ({"waveform": audio_data, "sample_rate": ar},)
+        return IO.NodeOutput({"waveform": audio_data, "sample_rate": ar})
 
     @classmethod
-    def IS_CHANGED(s, audio):
+    def fingerprint_inputs(cls, audio, **kwargs):
         audio_path = folder_paths.get_annotated_filepath(audio)
         m = hashlib.sha256()
         with open(audio_path, "rb") as f:
@@ -73,17 +79,10 @@ class PMLoadAudio:
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(s, audio):
+    def validate_inputs(cls, audio, **kwargs):
         if not folder_paths.exists_annotated_filepath(audio):
             return "Invalid audio file: {}".format(audio)
-
         return True
 
 
-NODE_CLASS_MAPPINGS = {
-    "PMLoadAudio": PMLoadAudio,
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMLoadAudio": "PM Audio Loader",
-}

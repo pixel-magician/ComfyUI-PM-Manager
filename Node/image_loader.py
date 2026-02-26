@@ -1,4 +1,3 @@
-
 import folder_paths
 import os
 import hashlib
@@ -6,24 +5,32 @@ import numpy as np
 import torch
 from PIL import Image, ImageSequence, ImageOps
 import node_helpers
+from comfy_api.latest import IO
 
 
-class PMLoadImage:
+class PMLoadImage(IO.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def define_schema(cls) -> IO.Schema:
         input_dir = folder_paths.get_input_directory()
         files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         files = folder_paths.filter_files_content_types(files, ["image"])
-        return {"required":
-                    {"image": (sorted(files),)},
-                }
 
-    CATEGORY = "PM Manager"
-    SEARCH_ALIASES = ["load image", "open image", "import image", "image input", "upload image", "read image", "image loader", "pm load image"]
+        return IO.Schema(
+            node_id="PMLoadImage",
+            display_name="PM Image Loader",
+            category="PM Manager",
+            search_aliases=["load image", "open image", "import image", "image input", "upload image", "read image", "image loader", "pm load image"],
+            inputs=[
+                IO.Combo.Input("image", options=sorted(files)),
+            ],
+            outputs=[
+                IO.Image.Output("image"),
+                IO.Mask.Output("mask"),
+            ],
+        )
 
-    RETURN_TYPES = ("IMAGE", "MASK")
-    FUNCTION = "load_image"
-    def load_image(self, image):
+    @classmethod
+    def execute(cls, image) -> IO.NodeOutput:
         image_path = folder_paths.get_annotated_filepath(image)
 
         img = node_helpers.pillow(Image.open, image_path)
@@ -69,10 +76,10 @@ class PMLoadImage:
             output_image = output_images[0]
             output_mask = output_masks[0]
 
-        return (output_image, output_mask)
+        return IO.NodeOutput(output_image, output_mask)
 
     @classmethod
-    def IS_CHANGED(s, image):
+    def fingerprint_inputs(cls, image, **kwargs):
         image_path = folder_paths.get_annotated_filepath(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
@@ -80,17 +87,10 @@ class PMLoadImage:
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(s, image):
+    def validate_inputs(cls, image, **kwargs):
         if not folder_paths.exists_annotated_filepath(image):
             return "Invalid image file: {}".format(image)
-
         return True
 
 
-NODE_CLASS_MAPPINGS = {
-    "PMLoadImage": PMLoadImage,
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMLoadImage": "PM Image Loader",
-}

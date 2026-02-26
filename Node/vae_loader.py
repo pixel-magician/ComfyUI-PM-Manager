@@ -1,25 +1,27 @@
 import comfy.sd
+from comfy_api.latest import IO
 from ..utils.model_paths import get_vae_path
 
 
-class PMVAELoader:
+class PMVAELoader(IO.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {},
-            "hidden": {
-                "vaes": ("PM_VAES",),
-            }
-        }
+    def define_schema(cls) -> IO.Schema:
+        return IO.Schema(
+            node_id="PMVAELoader",
+            display_name="PM VAE Loader",
+            category="PM Manager",
+            description="Loads a VAE model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+            inputs=[
+            ],
+            outputs=[
+                IO.Vae.Output("vae"),
+            ],
+        )
 
-    RETURN_TYPES = ("VAE",)
-    RETURN_NAMES = ("VAE",)
-    FUNCTION = "load_vae"
-
-    CATEGORY = "PM Manager"
-    DESCRIPTION = "Loads a VAE model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one."
-
-    def load_vae(self, vaes=None, **kwargs):
+    @classmethod
+    def execute(cls, **kwargs) -> IO.NodeOutput:
+        # Get vaes from hidden inputs
+        vaes = kwargs.get('vaes')
         selected_vae = None
         if vaes:
             if isinstance(vaes, dict) and '__value__' in vaes:
@@ -46,13 +48,4 @@ class PMVAELoader:
 
         vae = comfy.sd.load_vae(vae_path)
 
-        return (vae,)
-
-
-NODE_CLASS_MAPPINGS = {
-    "PMVAELoader": PMVAELoader,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMVAELoader": "PM VAE Loader",
-}
+        return IO.NodeOutput(vae)

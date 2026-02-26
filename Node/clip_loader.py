@@ -1,30 +1,29 @@
 import comfy.sd
+from comfy_api.latest import IO
 from ..utils.model_paths import get_clip_path
 
 
-class PMClipLoader:
+class PMClipLoader(IO.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-            },
-            "hidden": {
-                "clips": ("PM_CLIPS",),
-            }
-        }
+    def define_schema(cls) -> IO.Schema:
+        return IO.Schema(
+            node_id="PMClipLoader",
+            display_name="PM Clip Loader",
+            category="PM Manager",
+            description="Loads a CLIP model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+            inputs=[
+            ],
+            outputs=[
+                IO.Clip.Output("clip"),
+            ],
+        )
 
-    RETURN_TYPES = ("CLIP",)
-    RETURN_NAMES = ("CLIP",)
-    FUNCTION = "load_clip"
-
-    CATEGORY = "PM Manager"
-    DESCRIPTION = "Loads a CLIP model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one."
-
-    def load_clip(self, clips=None, **kwargs):
-        # Process clips from widget - single selection mode
+    @classmethod
+    def execute(cls, **kwargs) -> IO.NodeOutput:
+        # Get clips from hidden inputs
+        clips = kwargs.get('clips')
         selected_clip = None
         if clips:
-            # Handle both new format {'__value__': [...]} and old format [...]
             if isinstance(clips, dict) and '__value__' in clips:
                 clips_list = clips['__value__']
             elif isinstance(clips, list):
@@ -32,33 +31,21 @@ class PMClipLoader:
             else:
                 clips_list = []
 
-            # Find the selected clip (only one can be selected)
             for clip in clips_list:
                 if clip.get('selected', False):
                     selected_clip = clip.get('name', '')
                     break
 
-            # If no selected one, use the first one as default
             if not selected_clip and clips_list:
                 selected_clip = clips_list[0].get('name', '')
 
         if not selected_clip:
             raise ValueError("No CLIP model selected")
 
-        # Get full path for the selected clip
         clip_path = get_clip_path(selected_clip)
         if not clip_path:
             raise ValueError(f"CLIP model not found: {selected_clip}")
 
         clip = comfy.sd.load_clip(clip_path)
 
-        return (clip,)
-
-
-NODE_CLASS_MAPPINGS = {
-    "PMClipLoader": PMClipLoader,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMClipLoader": "PM Clip Loader",
-}
+        return IO.NodeOutput(clip)

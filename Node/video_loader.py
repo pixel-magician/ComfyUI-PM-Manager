@@ -2,25 +2,20 @@ import os
 import itertools
 import numpy as np
 import torch
-from PIL import Image, ImageOps
 import cv2
 import psutil
 import subprocess
 import re
-import time
 import hashlib
 import shutil
 import logging
 import sys
 import copy
-from typing import Iterable, Union
 from collections.abc import Mapping
-import functools
 
 import folder_paths
 from comfy.utils import common_upscale, ProgressBar
-import nodes
-from comfy.k_diffusion.utils import FolderOfImages
+from comfy_api.latest import IO
 
 try:
     from comfy_api.latest import InputImpl
@@ -151,29 +146,6 @@ else:
             ffmpeg_path = ffmpeg_paths[0]
         else:
             ffmpeg_path = max(ffmpeg_paths, key=ffmpeg_suitability)
-
-# ==================== Utility Functions ====================
-def is_gif(filename) -> bool:
-    file_parts = filename.split('.')
-    return len(file_parts) > 1 and file_parts[-1] == "gif"
-
-def target_size(width, height, custom_width, custom_height, downscale_ratio=8) -> tuple[int, int]:
-    if downscale_ratio is None:
-        downscale_ratio = 8
-    if custom_width == 0 and custom_height ==  0:
-        pass
-    elif custom_height == 0:
-        height *= custom_width/width
-        width = custom_width
-    elif custom_width == 0:
-        width *= custom_height/height
-        height = custom_height
-    else:
-        width = custom_width
-        height = custom_height
-    width = int(width/downscale_ratio + 0.5) * downscale_ratio
-    height = int(height/downscale_ratio + 0.5) * downscale_ratio
-    return (width, height)
 
 # ==================== File/Path Utilities ====================
 def strip_path(path):
@@ -331,6 +303,24 @@ def batched(it, n):
     while batch := tuple(itertools.islice(it, n)):
         yield batch
 
+def target_size(width, height, custom_width, custom_height, downscale_ratio=8) -> tuple[int, int]:
+    if downscale_ratio is None:
+        downscale_ratio = 8
+    if custom_width == 0 and custom_height ==  0:
+        pass
+    elif custom_height == 0:
+        height *= custom_width/width
+        width = custom_width
+    elif custom_width == 0:
+        width *= custom_height/height
+        height = custom_height
+    else:
+        width = custom_width
+        height = custom_height
+    width = int(width/downscale_ratio + 0.5) * downscale_ratio
+    height = int(height/downscale_ratio + 0.5) * downscale_ratio
+    return (width, height)
+
 def resized_cv_frame_gen(custom_width, custom_height, downscale_ratio, **kwargs):
     gen = cv_frame_generator(**kwargs)
     info =  next(gen)
@@ -392,9 +382,9 @@ def load_video(unique_id=None, memory_limit_mb=None,
     return (images, audio, len(images), None)
 
 # ==================== Main Node Class ====================
-class PMLoadVideo:
+class PMLoadVideo(IO.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def define_schema(cls) -> IO.Schema:
         input_dir = folder_paths.get_input_directory()
         files = []
         for f in os.listdir(input_dir):
@@ -402,68 +392,72 @@ class PMLoadVideo:
                 file_parts = f.split('.')
                 if len(file_parts) > 1 and (file_parts[-1].lower() in video_extensions):
                     files.append(f)
-        return {"required": {
-                    "video": (sorted(files),),
-                    "force_rate": (floatOrInt, {"default": 0, "min": 0, "max": 60, "step": 1, "disable": 0}),
-                    "custom_width": ("INT", {"default": 0, "min": 0, "max": DIMMAX, 'disable': 0}),
-                    "custom_height": ("INT", {"default": 0, "min": 0, "max": DIMMAX, 'disable': 0}),
-                    "frame_load_cap": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1, "disable": 0}),
-                    "skip_first_frames": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1}),
-                    "select_every_nth": ("INT", {"default": 1, "min": 1, "max": BIGMAX, "step": 1}),
-                    },
-                "hidden": {
-                    "force_size": "STRING",
-                    "unique_id": "UNIQUE_ID"
-                },
-                }
 
-    CATEGORY = "PM Manager"
-    SEARCH_ALIASES = [
-        "load video",
-        "open video",
-        "import video",
-        "video input",
-        "upload video",
-        "read video",
-        "video loader",
-        "pm load video",
-    ]
+        return IO.Schema(
+            node_id="PMLoadVideo",
+            display_name="PM Video Loader",
+            category="PM Manager",
+            search_aliases=[
+                "load video",
+                "open video",
+                "import video",
+                "video input",
+                "upload video",
+                "read video",
+                "video loader",
+                "pm load video",
+            ],
+            inputs=[
+                IO.Combo.Input("video", options=sorted(files)),
+                IO.Float.Input("force_rate", default=0, min=0, max=60, step=1),
+                IO.Int.Input("custom_width", default=0, min=0, max=DIMMAX),
+                IO.Int.Input("custom_height", default=0, min=0, max=DIMMAX),
+                IO.Int.Input("frame_load_cap", default=0, min=0, max=BIGMAX, step=1),
+                IO.Int.Input("skip_first_frames", default=0, min=0, max=BIGMAX, step=1),
+                IO.Int.Input("select_every_nth", default=1, min=1, max=BIGMAX, step=1),
+            ],
+            outputs=[
+                IO.Image.Output("images"),
+                IO.Audio.Output("audio"),
+                IO.Int.Output("frame_count"),
+                IO.Video.Output("video"),
+            ],
+        )
 
-    RETURN_TYPES = ("IMAGE", "AUDIO", "INT", "VIDEO")
-    RETURN_NAMES = ("IMAGE", "audio", "frame_count", "video")
+    @classmethod
+    def execute(cls, video, force_rate, custom_width, custom_height, frame_load_cap,
+                skip_first_frames, select_every_nth, **kwargs) -> IO.NodeOutput:
+        video_path = folder_paths.get_annotated_filepath(strip_path(video))
 
-    FUNCTION = "load_video"
+        kwargs_exec = {
+            'video': video_path,
+            'force_rate': force_rate,
+            'custom_width': custom_width,
+            'custom_height': custom_height,
+            'frame_load_cap': frame_load_cap,
+            'skip_first_frames': skip_first_frames,
+            'select_every_nth': select_every_nth,
+            'unique_id': kwargs.get('unique_id'),
+        }
 
-    def load_video(self, **kwargs):
-        video_path = folder_paths.get_annotated_filepath(strip_path(kwargs['video']))
-        kwargs['video'] = video_path
-        images, audio, frame_count, _ = load_video(**kwargs)
-        
+        images, audio, frame_count, _ = load_video(**kwargs_exec)
+
         video_obj = None
         if HAS_COMFY_API:
             try:
                 video_obj = InputImpl.VideoFromFile(video_path)
             except Exception as e:
                 logger.warn(f"Failed to create VideoFromFile object: {e}")
-        
-        return (images, audio, frame_count, video_obj)
+
+        return IO.NodeOutput(images, audio, frame_count, video_obj)
 
     @classmethod
-    def IS_CHANGED(s, video, **kwargs):
+    def fingerprint_inputs(cls, video, **kwargs):
         image_path = folder_paths.get_annotated_filepath(video)
         return calculate_file_hash(image_path)
 
     @classmethod
-    def VALIDATE_INPUTS(s, video):
+    def validate_inputs(cls, video, **kwargs):
         if not folder_paths.exists_annotated_filepath(video):
             return "Invalid video file: {}".format(video)
         return True
-
-# ==================== Node Mappings ====================
-NODE_CLASS_MAPPINGS = {
-    "PMLoadVideo": PMLoadVideo,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PMLoadVideo": "PM Video Loader",
-}

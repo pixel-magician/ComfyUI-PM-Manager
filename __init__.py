@@ -2,62 +2,64 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# 导入视频服务器端点（自动注册路由）
-from .api import video_server
 
-# 导入所有节点类
-from .Node.unet_loader import (
-    NODE_CLASS_MAPPINGS as UNET_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as UNET_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.lora_loader import (
-    NODE_CLASS_MAPPINGS as LORA_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as LORA_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.vae_loader import (
-    NODE_CLASS_MAPPINGS as VAE_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as VAE_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.clip_loader import (
-    NODE_CLASS_MAPPINGS as CLIP_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as CLIP_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.image_loader import (
-    NODE_CLASS_MAPPINGS as IMAGE_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.audio_loader import (
-    NODE_CLASS_MAPPINGS as AUDIO_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
-)
-from .Node.video_loader import (
-    NODE_CLASS_MAPPINGS as VIDEO_NODE_CLASS_MAPPINGS,
-    NODE_DISPLAY_NAME_MAPPINGS as VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
-)
 
-# 合并所有节点映射
-NODE_CLASS_MAPPINGS = {
-    **UNET_NODE_CLASS_MAPPINGS,
-    **LORA_NODE_CLASS_MAPPINGS,
-    **VAE_NODE_CLASS_MAPPINGS,
-    **CLIP_NODE_CLASS_MAPPINGS,
-    **IMAGE_NODE_CLASS_MAPPINGS,
-    **AUDIO_NODE_CLASS_MAPPINGS,
-    **VIDEO_NODE_CLASS_MAPPINGS,
-}
-NODE_DISPLAY_NAME_MAPPINGS = {
-    **UNET_NODE_DISPLAY_NAME_MAPPINGS,
-    **LORA_NODE_DISPLAY_NAME_MAPPINGS,
-    **VAE_NODE_DISPLAY_NAME_MAPPINGS,
-    **CLIP_NODE_DISPLAY_NAME_MAPPINGS,
-    **IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
-    **AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
-    **VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
-}
+# # 导入所有节点类
+# from .Node.unet_loader import (
+#     NODE_CLASS_MAPPINGS as UNET_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as UNET_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.lora_loader import (
+#     NODE_CLASS_MAPPINGS as LORA_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as LORA_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.vae_loader import (
+#     NODE_CLASS_MAPPINGS as VAE_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as VAE_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.clip_loader import (
+#     NODE_CLASS_MAPPINGS as CLIP_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as CLIP_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.image_loader import (
+#     NODE_CLASS_MAPPINGS as IMAGE_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.audio_loader import (
+#     NODE_CLASS_MAPPINGS as AUDIO_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+# from .Node.video_loader import (
+#     NODE_CLASS_MAPPINGS as VIDEO_NODE_CLASS_MAPPINGS,
+#     NODE_DISPLAY_NAME_MAPPINGS as VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
+# )
+
+# # 合并所有节点映射
+# NODE_CLASS_MAPPINGS = {
+#     **UNET_NODE_CLASS_MAPPINGS,
+#     **LORA_NODE_CLASS_MAPPINGS,
+#     **VAE_NODE_CLASS_MAPPINGS,
+#     **CLIP_NODE_CLASS_MAPPINGS,
+#     **IMAGE_NODE_CLASS_MAPPINGS,
+#     **AUDIO_NODE_CLASS_MAPPINGS,
+#     **VIDEO_NODE_CLASS_MAPPINGS,
+# }
+# NODE_DISPLAY_NAME_MAPPINGS = {
+#     **UNET_NODE_DISPLAY_NAME_MAPPINGS,
+#     **LORA_NODE_DISPLAY_NAME_MAPPINGS,
+#     **VAE_NODE_DISPLAY_NAME_MAPPINGS,
+#     **CLIP_NODE_DISPLAY_NAME_MAPPINGS,
+#     **IMAGE_NODE_DISPLAY_NAME_MAPPINGS,
+#     **AUDIO_NODE_DISPLAY_NAME_MAPPINGS,
+#     **VIDEO_NODE_DISPLAY_NAME_MAPPINGS,
+# }
 
 WEB_DIRECTORY = "./web"
-__all__ = ["WEB_DIRECTORY", "NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+# __all__ = ["WEB_DIRECTORY"]
 
+
+# 导入视频服务器端点（自动注册路由）
+from .api import video_server
 
 def setup_routes():
     from server import PromptServer
@@ -229,3 +231,30 @@ def setup_routes():
 
 # 初始化路由
 setup_routes()
+
+from comfy_api.latest import ComfyExtension, IO
+from .Node.unet_loader import PMUNetLoader
+from .Node.lora_loader import PMLoraLoader
+from .Node.vae_loader import PMVAELoader
+from .Node.clip_loader import PMClipLoader
+from .Node.image_loader import PMLoadImage
+from .Node.audio_loader import PMLoadAudio
+from .Node.video_loader import PMLoadVideo
+
+
+class PMManagerExtension(ComfyExtension):
+    async def get_node_list(self) -> list[type[IO.ComfyNode]]:
+        return [
+            PMUNetLoader,
+            PMLoraLoader,
+            PMVAELoader,
+            PMClipLoader,
+            PMLoadImage,
+            PMLoadAudio,
+            PMLoadVideo,
+        ]
+
+
+async def comfy_entrypoint() -> PMManagerExtension:
+    return PMManagerExtension()
+
