@@ -59,7 +59,7 @@ WEB_DIRECTORY = "./web"
 
 
 # 导入视频服务器端点（自动注册路由）
-from .api import video_server
+from .api import video_server  # noqa: F401
 
 def setup_routes():
     from server import PromptServer
