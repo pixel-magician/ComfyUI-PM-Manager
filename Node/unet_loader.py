@@ -1,6 +1,6 @@
 import comfy.sd
 import torch
-from ..pm_utils import get_unet_path
+from ..utils.model_paths import get_unet_path
 
 
 class PMUNetLoader:

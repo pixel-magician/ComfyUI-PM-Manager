@@ -21,6 +21,7 @@ except:
     elif os.path.isfile("ffmpeg.exe"):
         ffmpeg_path = os.path.abspath("ffmpeg.exe")
 
+
 def is_safe_path(path, strict=False):
     basedir = os.path.abspath('.')
     try:
@@ -28,6 +29,7 @@ def is_safe_path(path, strict=False):
     except:
         return False
     return common_path == basedir
+
 
 async def resolve_path(query):
     if "filename" not in query:
@@ -58,6 +60,7 @@ async def resolve_path(query):
         return server.web.Response(status=204)
     return file, filename, output_dir
 
+
 @server.PromptServer.instance.routes.get("/pm/viewvideo")
 async def pm_view_video(request):
     query = request.rel_url.query
@@ -71,7 +74,7 @@ async def pm_view_video(request):
             return server.web.FileResponse(path=file)
 
     in_args = ["-i", file]
-    
+
     base_fps = 30
     try:
         proc = await asyncio.create_subprocess_exec(ffmpeg_path, *in_args, '-t',
@@ -86,7 +89,7 @@ async def pm_view_video(request):
                 in_args = ['-c:v', 'libvpx-vp9'] + in_args
     except subprocess.CalledProcessError:
         pass
-    
+
     vfilters = []
     target_rate = float(query.get('force_rate', 0)) or base_fps
     modified_rate = target_rate / (float(query.get('select_every_nth', 1)) or 1)
@@ -145,6 +148,7 @@ async def pm_view_video(request):
         pass
     return resp
 
+
 @server.PromptServer.instance.routes.get("/pm/queryvideo")
 async def pm_query_video(request):
     query = request.rel_url.query
@@ -152,10 +156,10 @@ async def pm_query_video(request):
     if isinstance(path_res, server.web.Response):
         return path_res
     filepath = path_res[0]
-    
+
     if filepath.endswith(".webp"):
         return server.web.json_response({})
-    
+
     if filepath in query_cache and query_cache[filepath][0] == os.stat(filepath).st_mtime:
         source = query_cache[filepath][1]
     else:
@@ -171,7 +175,7 @@ async def pm_query_video(request):
                     cc = av.Codec('libvpx-vp9', 'r').create()
                 else:
                     cc = stream
-                
+
                 def fit():
                     for packet in cont.demux(video=0):
                         yield from cc.decode(packet)
@@ -183,10 +187,10 @@ async def pm_query_video(request):
                 query_cache[filepath] = (os.stat(filepath).st_mtime, source)
         except Exception:
             pass
-    
+
     if not 'frames' in source:
         return server.web.json_response({})
-    
+
     loaded = {}
     loaded['duration'] = source['duration']
     loaded['duration'] -= float(query.get('start_time', 0))

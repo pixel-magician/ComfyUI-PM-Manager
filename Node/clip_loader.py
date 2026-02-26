@@ -1,5 +1,5 @@
 import comfy.sd
-from ..pm_utils import get_clip_path
+from ..utils.model_paths import get_clip_path
 
 
 class PMClipLoader:
