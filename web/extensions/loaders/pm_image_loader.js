@@ -306,7 +306,7 @@ app.registerExtension({
             // 更新内部保存的完整路径
             const type = node.pm_directory_type || 'input';
             node.pm_selected_image = value + `[${type}]`;
-            
+
             // 更新预览
             setTimeout(() => {
               if (previewWidget && previewWidget.updateSource) {
@@ -314,6 +314,16 @@ app.registerExtension({
               }
             }, 100);
           };
+
+          // 如果 widget 已经有值（刚创建时），立即更新预览
+          if (imageWidget.value) {
+            setTimeout(() => {
+              node.pm_selected_image = imageWidget.value + `[${node.pm_directory_type || 'input'}]`;
+              if (previewWidget && previewWidget.updateSource) {
+                previewWidget.updateSource();
+              }
+            }, 100);
+          }
         }
       };
       
