@@ -7,8 +7,6 @@ from aiohttp import web
 from PIL import Image
 
 from ..utils.helpers import (
-    get_file_size,
-    has_media_or_subfolders,
     get_file_info,
 )
 
@@ -62,7 +60,11 @@ def scan_media_directory(base_dir, relative_path=""):
                         has_video = True
                 elif os.path.isdir(sub_entry_path):
                     sub_result = check_folder_content(sub_entry_path)
-                    if sub_result["has_image"] or sub_result["has_audio"] or sub_result["has_video"]:
+                    if (
+                        sub_result["has_image"]
+                        or sub_result["has_audio"]
+                        or sub_result["has_video"]
+                    ):
                         has_subfolder_with_content = True
                         has_image = has_image or sub_result["has_image"]
                         has_audio = has_audio or sub_result["has_audio"]
@@ -74,7 +76,10 @@ def scan_media_directory(base_dir, relative_path=""):
             "has_image": has_image,
             "has_audio": has_audio,
             "has_video": has_video,
-            "has_content": has_image or has_audio or has_video or has_subfolder_with_content
+            "has_content": has_image
+            or has_audio
+            or has_video
+            or has_subfolder_with_content,
         }
 
     for entry in os.listdir(current_dir):
@@ -135,6 +140,7 @@ def scan_media_directory(base_dir, relative_path=""):
 
 # ============ Input APIs ============
 
+
 async def list_pm_input(request):
     pm_input_dir = get_pm_input_dir()
     path = request.rel_url.query.get("path", "")
@@ -184,6 +190,7 @@ async def delete_pm_input(request):
             os.remove(full_path)
         elif os.path.isdir(full_path):
             import shutil
+
             shutil.rmtree(full_path)
 
     return web.json_response({"success": True})
@@ -245,6 +252,7 @@ async def new_input_folder(request):
 
 # ============ Output APIs ============
 
+
 async def list_pm_output(request):
     pm_output_dir = get_pm_output_dir()
     path = request.rel_url.query.get("path", "")
@@ -294,6 +302,7 @@ async def delete_pm_output(request):
             os.remove(full_path)
         elif os.path.isdir(full_path):
             import shutil
+
             shutil.rmtree(full_path)
 
     return web.json_response({"success": True})
@@ -388,38 +397,42 @@ async def upload_pm_input(request):
     try:
         reader = await request.multipart()
         field = await reader.next()
-        
-        if field.name == 'file':
+
+        if field.name == "file":
             filename = field.filename
             path = request.rel_url.query.get("path", "")
             path = urllib.parse.unquote(path)
-            
+
             pm_input_dir = get_pm_input_dir()
             target_dir = os.path.join(pm_input_dir, path) if path else pm_input_dir
-            
+
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
-            
+
             file_path = os.path.join(target_dir, filename)
-            
+
             if os.path.exists(file_path):
                 name, ext = os.path.splitext(filename)
                 counter = 1
-                while os.path.exists(os.path.join(target_dir, f"{name}_{counter}{ext}")):
+                while os.path.exists(
+                    os.path.join(target_dir, f"{name}_{counter}{ext}")
+                ):
                     counter += 1
                 filename = f"{name}_{counter}{ext}"
                 file_path = os.path.join(target_dir, filename)
-            
+
             size = 0
-            with open(file_path, 'wb') as f:
+            with open(file_path, "wb") as f:
                 while True:
                     chunk = await field.read_chunk()
                     if not chunk:
                         break
                     size += len(chunk)
                     f.write(chunk)
-            
-            return web.json_response({"success": True, "filename": filename, "size": size})
+
+            return web.json_response(
+                {"success": True, "filename": filename, "size": size}
+            )
         else:
             return web.Response(status=400, text="Missing file field")
     except Exception as e:
@@ -431,38 +444,42 @@ async def upload_pm_output(request):
     try:
         reader = await request.multipart()
         field = await reader.next()
-        
-        if field.name == 'file':
+
+        if field.name == "file":
             filename = field.filename
             path = request.rel_url.query.get("path", "")
             path = urllib.parse.unquote(path)
-            
+
             pm_output_dir = get_pm_output_dir()
             target_dir = os.path.join(pm_output_dir, path) if path else pm_output_dir
-            
+
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
-            
+
             file_path = os.path.join(target_dir, filename)
-            
+
             if os.path.exists(file_path):
                 name, ext = os.path.splitext(filename)
                 counter = 1
-                while os.path.exists(os.path.join(target_dir, f"{name}_{counter}{ext}")):
+                while os.path.exists(
+                    os.path.join(target_dir, f"{name}_{counter}{ext}")
+                ):
                     counter += 1
                 filename = f"{name}_{counter}{ext}"
                 file_path = os.path.join(target_dir, filename)
-            
+
             size = 0
-            with open(file_path, 'wb') as f:
+            with open(file_path, "wb") as f:
                 while True:
                     chunk = await field.read_chunk()
                     if not chunk:
                         break
                     size += len(chunk)
                     f.write(chunk)
-            
-            return web.json_response({"success": True, "filename": filename, "size": size})
+
+            return web.json_response(
+                {"success": True, "filename": filename, "size": size}
+            )
         else:
             return web.Response(status=400, text="Missing file field")
     except Exception as e:
