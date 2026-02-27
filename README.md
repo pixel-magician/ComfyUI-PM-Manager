@@ -53,10 +53,25 @@
 
 1. 在节点菜单中搜索"PM LoRA Loader"并添加到工作流
 2. 连接model和clip输入
-3. 点击节点上的管理器按钮添加LoRA
-4. 调整每个LoRA的强度参数
-5. 可以通过拖拽重新排序LoRA
-6. 使用切换按钮激活/停用特定LoRA
+3. 点击"选择模型"按钮打开LoRA管理器
+4. 在管理器中选择要添加的LoRA模型
+5. 调整每个LoRA的模型强度和CLIP强度
+6. 可以通过拖拽重新排序LoRA
+7. 使用切换按钮激活/停用特定LoRA
+8. 右键点击LoRA项可查看详情、上移、下移或删除
+
+### PM UNet/VAE/CLIP Loader 使用
+
+1. 在节点菜单中搜索对应的加载器节点
+2. 点击"选择模型"按钮打开模型管理器
+3. 浏览并选择需要的模型
+4. 支持模型预览和文件夹组织
+
+### PM Image/Audio/Video Loader 使用
+
+1. 在节点菜单中搜索对应的媒体加载器
+2. 点击"上传"按钮上传本地文件，或点击"从输入/输出选择"选择已有文件
+3. 支持媒体预览功能
 
 ### 工作流管理
 
@@ -71,13 +86,39 @@
 - 编辑元数据：为模型添加描述和标签
 - 组织管理：创建文件夹组织模型
 
-## 截图
+## 截图展示
 
-> [!NOTE]
-> 以下位置需要添加截图：
-> 
-> 1. PM LoRA Loader 节点界面 - 显示LoRA列表、强度控制、拖拽排序
-> 2. PM UNet/VAE/Clip Loader 节点界面
-> 3. 工作流管理界面
-> 4. 模型管理界面
-> 5. 媒体加载器界面
+### PM LoRA Loader
+支持多LoRA堆叠管理，可独立调整每个LoRA的模型强度和CLIP强度，支持拖拽排序和激活/停用切换。
+
+![PM LoRA Loader](./docs/image/PM-LoRA-Loader.png)
+
+### PM UNet Loader
+增强的UNet模型选择界面，支持模型预览和组织管理。
+
+![PM UNet Loader](./docs/image/PM-UNet-Loader.png)
+
+### PM VAE Loader
+增强的VAE模型选择界面，支持模型预览。
+
+![PM VAE Loader](./docs/image/PM-VAE-Loader.png)
+
+### PM CLIP Loader
+增强的CLIP模型选择界面，支持模型预览。
+
+![PM CLIP Loader](./docs/image/PM-CLIP-Loader.png)
+
+### PM Image Loader
+增强的图像加载器，支持图像预览和管理。
+
+![PM Image Loader](./docs/image/PM-Load_Image.png)
+
+### PM Audio Loader
+增强的音频加载器，支持音频预览。
+
+![PM Audio Loader](./docs/image/PM-Load_Audio.png)
+
+### PM Video Loader
+增强的视频加载器，支持视频预览。
+
+![PM Video Loader](./docs/image/PM-Load_Video.png)
