@@ -1,0 +1,137 @@
+{
+  "PMLoadImage": {
+    "display_name": "PM Image Loader",
+    "description": "Load images from the input folder with enhanced UI",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "mask"
+      }
+    }
+  },
+  "PMLoadAudio": {
+    "display_name": "PM Audio Loader",
+    "description": "Load audio files from the input folder with enhanced UI",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio"
+      }
+    }
+  },
+  "PMLoadVideo": {
+    "display_name": "PM Video Loader",
+    "description": "Load video files from the input folder with enhanced UI and frame extraction",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "force_rate": {
+        "name": "force_rate"
+      },
+      "force_size": {
+        "name": "force_size"
+      },
+      "custom_width": {
+        "name": "custom_width"
+      },
+      "custom_height": {
+        "name": "custom_height"
+      },
+      "frame_load_cap": {
+        "name": "frame_load_cap"
+      },
+      "skip_first_frames": {
+        "name": "skip_first_frames"
+      },
+      "select_every_nth": {
+        "name": "select_every_nth"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      },
+      "1": {
+        "name": "frame_count"
+      },
+      "2": {
+        "name": "audio"
+      },
+      "3": {
+        "name": "video_info"
+      }
+    }
+  },
+  "PMLoraLoader": {
+    "display_name": "PM LoRA Loader",
+    "description": "Loads LoRA models using PM Manager with enhanced UI. Supports lora_stack input and output.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "lora_stack": {
+        "name": "lora_stack"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model"
+      },
+      "1": {
+        "name": "clip"
+      },
+      "2": {
+        "name": "lora_stack"
+      }
+    }
+  },
+  "PMClipLoader": {
+    "display_name": "PM CLIP Loader",
+    "description": "Loads a CLIP model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+    "inputs": {},
+    "outputs": {
+      "0": {
+        "name": "clip"
+      }
+    }
+  },
+  "PMVAELoader": {
+    "display_name": "PM VAE Loader",
+    "description": "Loads a VAE model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+    "inputs": {},
+    "outputs": {
+      "0": {
+        "name": "vae"
+      }
+    }
+  },
+  "PMUNetLoader": {
+    "display_name": "PM UNet Loader",
+    "description": "Loads a UNet diffusion model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+    "inputs": {
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { app } from "/scripts/app.js";
+import { t, initPromise, onLocaleChange } from "../common/i18n.js";
 
 let pmModelManagerCache = null;
 
@@ -24,22 +25,31 @@ export async function openPMModelManager(node, openMethodName) {
   }
 }
 
-export function setupNode(node, config) {
+export async function setupNode(node, config) {
+  // 等待翻译加载完成
+  await initPromise;
+
   const {
     widgetPropertyName,
     addWidgetFn,
-    openMethodName
+    openMethodName,
+    buttonLabelKey = "selectModel",
+    buttonLabelDefault = "Select Model"
   } = config;
 
   node.serialize_widgets = true;
-  
-  node.addWidget("button", "选择模型", null, async () => {
+
+  const buttonWidget = node.addWidget("button", t(buttonLabelKey, buttonLabelDefault), null, async () => {
     await openPMModelManager(node, openMethodName);
   });
-  
+
+  // Store original key for language switching
+  buttonWidget._pmLabelKey = buttonLabelKey;
+  buttonWidget._pmLabelDefault = buttonLabelDefault;
+
   node.pm_selected_model = null;
   node.pm_metadata = {};
-  
+
   node[widgetPropertyName] = addWidgetFn(
     node,
     widgetPropertyName,

@@ -11,6 +11,7 @@ export const addUnetsWidget = createSingleSelectorWidget({
   contextMenuClass: "pm-unet",
   modelType: "diffusion_models",
   emptyMessage: "No UNets added",
+  emptyMessageKey: "noUNetsAdded",
   defaultHeight: 180,
   openDetailsFn: createOpenDetailsFn()
 });

@@ -1,5 +1,6 @@
 import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
+import { t, initPromise, onLocaleChange } from "../common/i18n.js";
 
 let pmInputManagerCache = null;
 
@@ -69,7 +70,7 @@ export async function openPMInputManagerForAudio(node, directoryType = 'input') 
       }
     });
   } else {
-    console.error("PM Input Manager not found");
+    console.error(t('pmInputManagerNotFound', 'PM Input Manager not found'));
   }
 }
 
@@ -140,17 +141,37 @@ app.registerExtension({
         
         document.body.append(fileInput);
         
-        let uploadWidget = this.addWidget("button", "上传音频", "audio", () => {
+        let uploadWidget = this.addWidget("button", "Upload Audio", "audio", () => {
           app.canvas.node_widget = null;
           fileInput.click();
         });
         uploadWidget.options.serialize = false;
         
-        this.addWidget("button", "从输入选择文件", null, async () => {
+        let selectInputWidget = this.addWidget("button", "Select from Input", null, async () => {
           await openPMInputManagerForAudio(this, 'input');
         });
-        this.addWidget("button", "从输出选择文件", null, async () => {
+        let selectOutputWidget = this.addWidget("button", "Select from Output", null, async () => {
           await openPMInputManagerForAudio(this, 'output');
+        });
+
+        // 等待翻译加载完成后更新按钮文本
+        initPromise.then(() => {
+          uploadWidget.label = t('uploadAudio', 'Upload Audio');
+          selectInputWidget.label = t('selectFromInput', 'Select from Input');
+          selectOutputWidget.label = t('selectFromOutput', 'Select from Output');
+          if (app.canvas) {
+            app.canvas.draw(true, true);
+          }
+        });
+
+        // 监听语言变化
+        onLocaleChange(() => {
+          uploadWidget.label = t('uploadAudio', 'Upload Audio');
+          selectInputWidget.label = t('selectFromInput', 'Select from Input');
+          selectOutputWidget.label = t('selectFromOutput', 'Select from Output');
+          if (app.canvas) {
+            app.canvas.draw(true, true);
+          }
         });
         
         var element = document.createElement("audio");

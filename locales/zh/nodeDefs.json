@@ -1,0 +1,137 @@
+{
+  "PMLoadImage": {
+    "display_name": "PM 图像加载器",
+    "description": "通过增强型UI从输入文件夹加载图像",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      }
+    }
+  },
+  "PMLoadAudio": {
+    "display_name": "PM 音频加载器",
+    "description": "通过增强型UI从输入文件夹加载音频文件",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频"
+      }
+    }
+  },
+  "PMLoadVideo": {
+    "display_name": "PM 视频加载器",
+    "description": "通过增强型UI从输入文件夹加载视频文件并提取帧",
+    "inputs": {
+      "video": {
+        "name": "视频"
+      },
+      "force_rate": {
+        "name": "强制帧率"
+      },
+      "force_size": {
+        "name": "强制尺寸"
+      },
+      "custom_width": {
+        "name": "自定义宽度"
+      },
+      "custom_height": {
+        "name": "自定义高度"
+      },
+      "frame_load_cap": {
+        "name": "最大加载帧数"
+      },
+      "skip_first_frames": {
+        "name": "跳过前N帧"
+      },
+      "select_every_nth": {
+        "name": "每隔N帧选取"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像序列"
+      },
+      "1": {
+        "name": "帧数"
+      },
+      "2": {
+        "name": "音频"
+      },
+      "3": {
+        "name": "视频信息"
+      }
+    }
+  },
+  "PMLoraLoader": {
+    "display_name": "PM LoRA加载器",
+    "description": "使用PM管理器加载LoRA模型，支持增强型UI，支持lora_stack输入和输出",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "clip": {
+        "name": "CLIP"
+      },
+      "lora_stack": {
+        "name": "LoRA堆栈"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型"
+      },
+      "1": {
+        "name": "CLIP"
+      },
+      "2": {
+        "name": "LoRA堆栈"
+      }
+    }
+  },
+  "PMClipLoader": {
+    "display_name": "PM CLIP加载器",
+    "description": "使用PM管理器加载CLIP模型，支持增强型UI，支持多模型但仅加载选中的模型",
+    "inputs": {},
+    "outputs": {
+      "0": {
+        "name": "CLIP"
+      }
+    }
+  },
+  "PMVAELoader": {
+    "display_name": "PM VAE加载器",
+    "description": "使用PM管理器加载VAE模型，支持增强型UI，支持多模型但仅加载选中的模型",
+    "inputs": {},
+    "outputs": {
+      "0": {
+        "name": "VAE"
+      }
+    }
+  },
+  "PMUNetLoader": {
+    "display_name": "PM UNet加载器",
+    "description": "使用PM管理器加载UNet扩散模型，支持增强型UI，支持多模型但仅加载选中的模型",
+    "inputs": {
+      "weight_dtype": {
+        "name": "权重数据类型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型"
+      }
+    }
+  }
+}

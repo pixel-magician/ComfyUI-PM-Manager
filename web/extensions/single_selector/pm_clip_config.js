@@ -11,6 +11,7 @@ export const addClipsWidget = createSingleSelectorWidget({
   contextMenuClass: "pm-clip",
   modelType: "clip",
   emptyMessage: "No CLIPs added",
+  emptyMessageKey: "noCLIPsAdded",
   defaultHeight: 180,
   openDetailsFn: createOpenDetailsFn()
 });

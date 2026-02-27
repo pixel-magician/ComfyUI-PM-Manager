@@ -6,6 +6,7 @@ import { PreviewTooltip } from "../common/preview_tooltip.js";
 import { createLoraContextMenu } from "./loras_context_menu.js";
 import { fetchWithUser } from "../pm_model.js";
 import { app } from "/scripts/app.js";
+import { t, initPromise, onLocaleChange } from "../common/i18n.js";
 
 // Global mouse position tracking for preview tooltip
 if (typeof window.lastMouseX === 'undefined') {
@@ -25,7 +26,10 @@ if (typeof window.pmDragState === 'undefined') {
   };
 }
 
-export function addLorasWidget(node, name, opts, callback) {
+export async function addLorasWidget(node, name, opts, callback) {
+  // 等待翻译加载完成
+  await initPromise;
+
   ensurePmStyles();
 
   const container = document.createElement("div");
@@ -100,7 +104,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
     if (lorasData.length === 0) {
       const emptyMessage = document.createElement("div");
-      emptyMessage.textContent = "No LoRAs added";
+      emptyMessage.textContent = t('noLorasAdded', 'No LoRAs added');
       emptyMessage.className = "pm-lora-empty-state";
       container.appendChild(emptyMessage);
       updateWidgetHeight(container, EMPTY_CONTAINER_HEIGHT, defaultHeight, node);
@@ -119,7 +123,7 @@ export function addLorasWidget(node, name, opts, callback) {
     });
 
     const toggleLabel = document.createElement("div");
-    toggleLabel.textContent = "Toggle All";
+    toggleLabel.textContent = t('toggleAll', 'Toggle All');
     toggleLabel.className = "pm-toggle-label";
 
     const toggleContainer = document.createElement("div");
@@ -622,9 +626,15 @@ export function addLorasWidget(node, name, opts, callback) {
   widget.value = defaultValue;
   widget.callback = callback;
 
+  // Listen for locale changes and re-render
+  const unsubscribeLocaleChange = onLocaleChange(() => {
+    renderLoras(widget.value, widget);
+  });
+
   widget.onRemove = () => {
     previewTooltip.cleanup();
     container.remove();
+    unsubscribeLocaleChange();
   };
 
   return { minWidth: 400, minHeight: defaultHeight, widget };

@@ -1,4 +1,5 @@
 import { app } from "/scripts/app.js";
+import { t, onLocaleChange } from "./common/i18n.js";
 
 function getComfyUserHeader() {
     try {
@@ -148,8 +149,8 @@ class PMInputDialog {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                                 </svg>
                             <div>
-                                <h2 class="text-xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">PM 输入管理器</h2>
-                                <p class="text-xs text-[var(--fg-light)]">管理您的输入资源（图片、音频、视频）</p>
+                                <h2 class="text-xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">${t('pmInputManager', 'PM Input Manager')}</h2>
+                                <p class="text-xs text-[var(--fg-light)]">${t('pmInputManagerDesc', 'Manage your input resources (images, audio, video)')}</p>
                             </div>
                         </div>
                         <button id="pm-input-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
@@ -161,17 +162,17 @@ class PMInputDialog {
                     <div id="pm-input-breadcrumb" class="px-6 py-3 border-b border-[var(--border-color)] flex items-center gap-2 text-sm flex-shrink-0 bg-[var(--comfy-input-bg)]/20">
                     </div>
                     <div class="px-6 py-2 border-b border-[var(--border-color)] flex items-center gap-4 flex-shrink-0 bg-[var(--comfy-input-bg)]/10">
-                        <span class="text-sm text-[var(--fg-light)]">筛选:</span>
+                        <span id="pm-input-filter-label" class="text-sm text-[var(--fg-light)]">${t('filter', 'Filter')}:</span>
                         <select id="pm-input-filter" class="px-3 py-1 rounded-lg text-sm bg-[var(--comfy-input-bg)] text-[var(--fg)] border-none outline-none cursor-pointer">
-                            <option value="all" ${this.filterType === 'all' ? 'selected' : ''}>全部</option>
-                            <option value="image" ${this.filterType === 'image' ? 'selected' : ''}>图片</option>
-                            <option value="audio" ${this.filterType === 'audio' ? 'selected' : ''}>音频</option>
-                            <option value="video" ${this.filterType === 'video' ? 'selected' : ''}>视频</option>
+                            <option value="all" ${this.filterType === 'all' ? 'selected' : ''}>${t('all', 'All')}</option>
+                            <option value="image" ${this.filterType === 'image' ? 'selected' : ''}>${t('image', 'Image')}</option>
+                            <option value="audio" ${this.filterType === 'audio' ? 'selected' : ''}>${t('audio', 'Audio')}</option>
+                            <option value="video" ${this.filterType === 'video' ? 'selected' : ''}>${t('video', 'Video')}</option>
                         </select>
                     </div>
                     <div class="p-4 overflow-y-auto flex-grow">
                         <div id="pm-input-list" class="grid grid-cols-5 gap-4">
-                            <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                            <div class="text-center py-8 text-[var(--fg-light)]">${t('loading', 'Loading...')}</div>
                         </div>
                     </div>
                 </div>
@@ -212,7 +213,7 @@ class PMInputDialog {
             this.renderItems();
         } catch (error) {
             const listEl = this.dialog.querySelector('#pm-input-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-red-500">加载失败</div>';
+            listEl.innerHTML = `<div class="text-center py-8 text-red-500">${t('loadingFailed', 'Loading failed')}</div>`;
         }
     }
 
@@ -226,12 +227,12 @@ class PMInputDialog {
         </svg>`;
         
         if (parts.length > 0) {
-            html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">根目录</button>`;
+            html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">${t('rootDirectory', 'Root')}</button>`;
             html += `<svg class="w-4 h-4 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>`;
         } else {
-            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">根目录</span>`;
+            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">${t('rootDirectory', 'Root')}</span>`;
         }
         
         let currentPath = '';
@@ -316,7 +317,7 @@ class PMInputDialog {
         }
 
         if (filteredItems.length === 0) {
-            listEl.innerHTML = '<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">暂无内容</div>';
+            listEl.innerHTML = `<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">${t('noContent', 'No content')}</div>`;
         } else {
             listEl.innerHTML = filteredItems.map((item, index) => {
                 const isFolder = item.type === 'folder';
@@ -432,7 +433,7 @@ class PMInputDialog {
                         </div>
                         <div class="flex flex-col items-start px-3 py-3 flex-shrink-0" style="min-height: 64px;">
                             <p class="text-base font-medium text-[var(--fg)] truncate w-full text-left mb-2">${item.name}</p>
-                            <span class="text-xs text-[var(--fg-light)] text-left px-2 py-1 rounded-md bg-black/30">${item.type}</span>
+                            <span class="text-xs text-[var(--fg-light)] text-left px-2 py-1 rounded-md bg-black/30">${item.type === 'folder' ? t('folder', 'Folder') : t(item.type, item.type)}</span>
                         </div>
                     </div>
                 `;
@@ -655,13 +656,13 @@ class PMInputDialog {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                </svg>`;
         
-        const title = this.directoryType === 'output' 
-            ? 'PM 输出管理器' 
-            : 'PM 输入管理器';
-        
-        const description = this.directoryType === 'output' 
-            ? '管理您的输出资源（图片、音频、视频）' 
-            : '管理您的输入资源（图片、音频、视频）';
+        const title = this.directoryType === 'output'
+            ? t('pmOutputManager', 'PM Output Manager')
+            : t('pmInputManager', 'PM Input Manager');
+
+        const description = this.directoryType === 'output'
+            ? t('pmOutputManagerDesc', 'Manage your output resources (images, audio, video)')
+            : t('pmInputManagerDesc', 'Manage your input resources (images, audio, video)');
         
         const titleGradient = this.directoryType === 'output' 
             ? 'from-orange-400 to-yellow-400' 
@@ -690,6 +691,7 @@ class PMInputDialog {
         }
 
         this.updateDialogHeader();
+        this.updateDialogTranslations();
         
         const filterSelect = this.dialog.querySelector('#pm-input-filter');
         if (filterSelect) {
@@ -732,6 +734,27 @@ class PMInputDialog {
         this.contextMenu.className = 'pm-context-menu';
     }
 
+    updateDialogTranslations() {
+        // Update Filter label
+        const filterLabel = this.dialog.querySelector('#pm-input-filter-label');
+        if (filterLabel) {
+            filterLabel.textContent = t('filter', 'Filter') + ':';
+        }
+
+        // Update Filter options
+        const filterSelect = this.dialog.querySelector('#pm-input-filter');
+        if (filterSelect) {
+            const options = filterSelect.querySelectorAll('option');
+            const optionKeys = ['all', 'image', 'audio', 'video'];
+            const optionDefaults = ['All', 'Image', 'Audio', 'Video'];
+            options.forEach((option, index) => {
+                if (optionKeys[index]) {
+                    option.textContent = t(optionKeys[index], optionDefaults[index]);
+                }
+            });
+        }
+    }
+
     updateContextMenu(isItemMenu) {
         if (isItemMenu) {
             this.contextMenu.innerHTML = `
@@ -739,26 +762,26 @@ class PMInputDialog {
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    详细信息
+                    ${t('viewDetails', 'View Details')}
                 </div>
                 <div class="pm-context-menu-item" data-action="download">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                     </svg>
-                    下载
+                    ${t('download', 'Download')}
                 </div>
                 <div class="pm-context-menu-item" data-action="rename">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
-                    重命名
+                    ${t('rename', 'Rename')}
                 </div>
                 <div class="pm-context-menu-divider"></div>
                 <div class="pm-context-menu-item danger" data-action="delete">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    删除
+                    ${t('delete', 'Delete')}
                 </div>
             `;
         } else if (!this.disableNewFolder) {
@@ -767,13 +790,13 @@ class PMInputDialog {
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
-                    上传文件
+                    ${t('uploadFile', 'Upload File')}
                 </div>
                 <div class="pm-context-menu-item" data-action="new-folder">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
                     </svg>
-                    新建文件夹
+                    ${t('newFolder', 'New Folder')}
                 </div>
             `;
         } else {
@@ -798,12 +821,12 @@ class PMInputDialog {
         this.promptDialog.innerHTML = `
             <div class="pm-prompt-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-prompt-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">重命名</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">${t('rename', 'Rename')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-4" id="pm-prompt-message"></p>
                 <input type="text" id="pm-prompt-input" class="w-full px-4 py-2 rounded-lg bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] mb-4 focus:outline-none focus:border-green-500">
                 <div class="flex justify-end gap-3">
-                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-500 text-white hover:opacity-90 transition-opacity">确定</button>
+                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-teal-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-green-500/30 transition-all duration-200 hover:scale-105 border-0">${t('confirm', 'Confirm')}</button>
                 </div>
             </div>
         `;
@@ -857,11 +880,11 @@ class PMInputDialog {
         this.confirmDialog.innerHTML = `
             <div class="pm-confirm-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-confirm-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">确认</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">${t('confirm', 'Confirm')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-6" id="pm-confirm-message"></p>
                 <div class="flex justify-end gap-3">
-                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">删除</button>
+                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200 hover:scale-105 border-0">${t('delete', 'Delete')}</button>
                 </div>
             </div>
         `;
@@ -887,7 +910,7 @@ class PMInputDialog {
         
         this.confirmDialog.querySelector('#pm-confirm-title').textContent = title;
         this.confirmDialog.querySelector('#pm-confirm-message').textContent = message;
-        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || '确定';
+        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || t('confirm', 'Confirm');
         this.confirmCallback = callback;
         this.confirmDialog.style.display = 'flex';
     }
@@ -1032,7 +1055,7 @@ class PMInputDialog {
     renameItem(item) {
         const oldName = item.name;
         
-        this.showPromptDialog('重命名', '请输入新名称:', oldName, async (newName) => {
+        this.showPromptDialog(t('rename', 'Rename'), t('enterNewName', 'Please enter a new name:'), oldName, async (newName) => {
             if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
             
             try {
@@ -1059,11 +1082,11 @@ class PMInputDialog {
     }
 
     deleteItem(item) {
-        const confirmMsg = item.type === 'folder' 
-            ? `确定要删除文件夹 "${item.name}" 及其所有内容吗？` 
-            : `确定要删除文件 "${item.name}" 吗？`;
-        
-        this.showConfirmDialog('确认删除', confirmMsg, '删除', async (confirmed) => {
+        const confirmMsg = item.type === 'folder'
+            ? `${t('confirmDeleteFolder', 'Are you sure you want to delete the folder')} "${item.name}" ${t('andAllContents', 'and all its contents')}?`
+            : `${t('confirmDeleteFile', 'Are you sure you want to delete the file')} "${item.name}"?`;
+
+        this.showConfirmDialog(t('confirmDelete', 'Confirm Delete'), confirmMsg, t('delete', 'Delete'), async (confirmed) => {
             if (!confirmed) return;
             
             try {
@@ -1125,55 +1148,55 @@ class PMInputDialog {
             let html = `
                 <div class="grid grid-cols-2 gap-4">
                     <div class="info-card p-4">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">名称</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('name', 'Name')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.name}</p>
                     </div>
                     <div class="info-card p-4">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">类型</p>
-                        <p class="text-[var(--fg)] font-medium">${info.type}</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('type', 'Type')}</p>
+                        <p class="text-[var(--fg)] font-medium">${info.type === 'folder' ? t('folder', 'Folder') : t(info.type, info.type)}</p>
                     </div>
             `;
-            
+
             if (info.size) {
                 html += `
                     <div class="info-card p-4">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">大小</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('size', 'Size')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.size}</p>
                     </div>
                 `;
             }
-            
+
             if (info.extension) {
                 html += `
                     <div class="info-card p-4">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">扩展名</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('extension', 'Extension')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.extension}</p>
                     </div>
                 `;
             }
-            
+
             if (info.created_time) {
                 html += `
                     <div class="info-card p-4 col-span-2">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">创建时间</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('createdTime', 'Created Time')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.created_time}</p>
                     </div>
                 `;
             }
-            
+
             if (info.modified_time) {
                 html += `
                     <div class="info-card p-4 col-span-2">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">修改时间</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('modifiedTime', 'Modified Time')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.modified_time}</p>
                     </div>
                 `;
             }
-            
+
             if (info.file_count !== undefined) {
                 html += `
                     <div class="info-card p-4">
-                        <p class="text-sm text-[var(--fg-light)] mb-1">文件数量</p>
+                        <p class="text-sm text-[var(--fg-light)] mb-1">${t('fileCount', 'File Count')}</p>
                         <p class="text-[var(--fg)] font-medium">${info.file_count}</p>
                     </div>
                 `;
@@ -1239,7 +1262,7 @@ class PMInputDialog {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-lg font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent" id="pm-info-title">详细信息</h3>
+                        <h3 class="text-lg font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent" id="pm-info-title">${t('fileDetails', 'File Details')}</h3>
                     </div>
                     <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1248,7 +1271,7 @@ class PMInputDialog {
                     </button>
                 </div>
                 <div id="pm-info-body" class="overflow-y-auto flex-grow p-6">
-                    <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                    <div class="text-center py-8 text-[var(--fg-light)]">${t('loading', 'Loading...')}</div>
                 </div>
             </div>
         `;
@@ -1284,32 +1307,32 @@ app.registerExtension({
             if (existingTab) {
                 existingTab.remove();
             }
-            
+
             const sidebarGroups = document.querySelectorAll('.sidebar-item-group');
-            
+
             if (sidebarGroups.length > 0) {
                 const firstGroup = sidebarGroups[0];
-                
+
                 const pmModelButton = document.getElementById('pm-model-tab');
-                
+
                 if (pmModelButton) {
                     const pmButton = pmModelButton.cloneNode(true);
                     pmButton.id = 'pm-input-tab';
-                    
+
                     const label = pmButton.querySelector('.side-bar-button-label');
                     if (label) {
-                        label.textContent = 'PM输入';
+                        label.textContent = t('pmInput', 'PM Input');
                     }
-                    
+
                     const iconEl = pmButton.querySelector('.side-bar-button-icon, svg');
                     if (iconEl) {
                         iconEl.outerHTML = '<svg class="side-bar-button-icon" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>';
                     }
-                    
+
                     pmButton.onclick = function() {
                         pmInputDialog.show();
                     };
-                    
+
                     if (pmModelButton.nextSibling) {
                         firstGroup.insertBefore(pmButton, pmModelButton.nextSibling);
                     } else {
@@ -1322,25 +1345,36 @@ app.registerExtension({
             }
             return false;
         };
-        
+
         if (insertButton()) {
-            return;
+            // return;
         }
-        
+
         const observer = new MutationObserver((mutations, obs) => {
             if (insertButton()) {
                 obs.disconnect();
             }
         });
-        
+
         observer.observe(document.body, {
             childList: true,
             subtree: true
         });
-        
+
         setTimeout(() => {
             observer.disconnect();
             insertButton();
         }, 1000);
+
+        // Listen for locale changes to update button text
+        onLocaleChange(() => {
+            const button = document.getElementById('pm-input-tab');
+            if (button) {
+                const label = button.querySelector('.side-bar-button-label');
+                if (label) {
+                    label.textContent = t('pmInput', 'PM Input');
+                }
+            }
+        });
     }
 });

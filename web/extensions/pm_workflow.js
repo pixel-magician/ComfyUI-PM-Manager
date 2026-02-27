@@ -1,4 +1,5 @@
 import { app } from "/scripts/app.js";
+import { t, onLocaleChange } from "./common/i18n.js";
 
 function getComfyUserHeader() {
     try {
@@ -143,8 +144,8 @@ class PMWorkflowDialog {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                                 </svg>
                             <div>
-                                <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">PM 工作流管理器</h2>
-                                <p class="text-xs text-[var(--fg-light)]">管理和预览您的工作流</p>
+                                <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${t('pmWorkflowManager', 'PM Workflow Manager')}</h2>
+                                <p class="text-xs text-[var(--fg-light)]">${t('pmWorkflowManagerDesc', 'Manage and preview your workflows')}</p>
                             </div>
                         </div>
                         <button id="pm-workflow-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
@@ -157,7 +158,7 @@ class PMWorkflowDialog {
                     </div>
                     <div class="p-4 overflow-y-auto flex-grow">
                         <div id="pm-workflow-list" class="grid grid-cols-5 gap-4">
-                            <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                            <div class="text-center py-8 text-[var(--fg-light)]">${t('loading', 'Loading...')}</div>
                         </div>
                     </div>
                 </div>
@@ -187,7 +188,7 @@ class PMWorkflowDialog {
             this.renderItems();
         } catch (error) {
             const listEl = this.dialog.querySelector('#pm-workflow-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-red-500">加载失败</div>';
+            listEl.innerHTML = `<div class="text-center py-8 text-red-500">${t('loadingFailed', 'Loading failed')}</div>`;
         }
     }
 
@@ -201,12 +202,12 @@ class PMWorkflowDialog {
         </svg>`;
         
         if (parts.length > 0) {
-            html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">根目录</button>`;
+            html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">${t('rootDirectory', 'Root')}</button>`;
             html += `<svg class="w-4 h-4 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>`;
         } else {
-            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">根目录</span>`;
+            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">${t('rootDirectory', 'Root')}</span>`;
         }
         
         let currentPath = '';
@@ -239,7 +240,7 @@ class PMWorkflowDialog {
         const listEl = this.dialog.querySelector('#pm-workflow-list');
         
         if (this.items.length === 0) {
-            listEl.innerHTML = '<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">暂无内容</div>';
+            listEl.innerHTML = `<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">${t('noContent', 'No content')}</div>`;
         } else {
             listEl.innerHTML = this.items.map((item, index) => {
                 const isFolder = item.type === 'folder';
@@ -361,12 +362,13 @@ class PMWorkflowDialog {
                 this.close();
             }
         } catch (error) {
-            alert('加载工作流失败');
+            alert(t('loadWorkflowFailed', 'Failed to load workflow'));
         }
     }
 
     async show() {
         this.setupContextMenuEvents();
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -381,6 +383,18 @@ class PMWorkflowDialog {
         this.contextMenu.className = 'pm-context-menu';
     }
 
+    updateDialogTranslations() {
+        // Update title and description
+        const titleEl = this.dialog.querySelector('h2');
+        if (titleEl) {
+            titleEl.textContent = t('pmWorkflowManager', 'PM Workflow Manager');
+        }
+        const descEl = this.dialog.querySelector('p.text-xs');
+        if (descEl) {
+            descEl.textContent = t('pmWorkflowManagerDesc', 'Manage and preview your workflows');
+        }
+    }
+
     updateContextMenu(isItemMenu) {
         if (isItemMenu) {
             this.contextMenu.innerHTML = `
@@ -388,20 +402,20 @@ class PMWorkflowDialog {
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
-                    重命名
+                    ${t('rename', 'Rename')}
                 </div>
                 <div class="pm-context-menu-item" data-action="replace-preview">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    替换预览图
+                    ${t('replacePreview', 'Replace Preview')}
                 </div>
                 <div class="pm-context-menu-divider"></div>
                 <div class="pm-context-menu-item danger" data-action="delete">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    删除
+                    ${t('delete', 'Delete')}
                 </div>
             `;
         } else {
@@ -410,13 +424,13 @@ class PMWorkflowDialog {
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
                     </svg>
-                    新建文件夹
+                    ${t('newFolder', 'New Folder')}
                 </div>
                 <div class="pm-context-menu-item" data-action="new-workflow">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
-                    新建工作流
+                    ${t('newWorkflow', 'New Workflow')}
                 </div>
             `;
         }
@@ -439,12 +453,12 @@ class PMWorkflowDialog {
         this.promptDialog.innerHTML = `
             <div class="pm-prompt-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-prompt-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">重命名</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">${t('rename', 'Rename')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-4" id="pm-prompt-message"></p>
                 <input type="text" id="pm-prompt-input" class="w-full px-4 py-2 rounded-lg bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] mb-4 focus:outline-none focus:border-purple-500">
                 <div class="flex justify-end gap-3">
-                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity">确定</button>
+                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 hover:scale-105 border-0">${t('confirm', 'Confirm')}</button>
                 </div>
             </div>
         `;
@@ -498,11 +512,11 @@ class PMWorkflowDialog {
         this.confirmDialog.innerHTML = `
             <div class="pm-confirm-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-confirm-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">确认</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">${t('confirm', 'Confirm')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-6" id="pm-confirm-message"></p>
                 <div class="flex justify-end gap-3">
-                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">删除</button>
+                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200 hover:scale-105 border-0">${t('delete', 'Delete')}</button>
                 </div>
             </div>
         `;
@@ -528,7 +542,7 @@ class PMWorkflowDialog {
         
         this.confirmDialog.querySelector('#pm-confirm-title').textContent = title;
         this.confirmDialog.querySelector('#pm-confirm-message').textContent = message;
-        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || '确定';
+        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || t('confirm', 'Confirm');
         this.confirmCallback = callback;
         this.confirmDialog.style.display = 'flex';
     }
@@ -615,7 +629,7 @@ class PMWorkflowDialog {
         const isWorkflow = item.type === 'workflow';
         const currentNameWithoutExt = isWorkflow ? oldName : oldName;
         
-        this.showPromptDialog('重命名', '请输入新名称:', currentNameWithoutExt, async (newName) => {
+        this.showPromptDialog(t('rename', 'Rename'), t('enterNewName', 'Please enter a new name:'), currentNameWithoutExt, async (newName) => {
             if (!newName || newName.trim() === '' || newName.trim() === currentNameWithoutExt) return;
             
             let newFilename = newName.trim();
@@ -651,11 +665,11 @@ class PMWorkflowDialog {
     }
 
     deleteItem(item) {
-        const confirmMsg = item.type === 'folder' 
-            ? `确定要删除文件夹 "${item.name}" 及其所有内容吗？` 
-            : `确定要删除工作流 "${item.name}" 吗？`;
-        
-        this.showConfirmDialog('确认删除', confirmMsg, '删除', async (confirmed) => {
+        const confirmMsg = item.type === 'folder'
+            ? `${t('confirmDeleteFolder', 'Are you sure you want to delete the folder')} "${item.name}" ${t('andAllContents', 'and all its contents')}?`
+            : `${t('confirmDeleteWorkflow', 'Are you sure you want to delete the workflow')} "${item.name}"?`;
+
+        this.showConfirmDialog(t('confirmDelete', 'Confirm Delete'), confirmMsg, t('delete', 'Delete'), async (confirmed) => {
             if (!confirmed) return;
             
             try {
@@ -714,11 +728,11 @@ class PMWorkflowDialog {
                     }
                 } else {
                     const errorText = await response.text();
-                    alert('替换预览图失败: ' + errorText);
+                    alert(t('replacePreviewFailed', 'Replace preview failed') + ': ' + errorText);
                 }
             } catch (error) {
                 console.error('Replace preview error:', error);
-                alert('替换预览图失败: ' + error.message);
+                alert(t('replacePreviewFailed', 'Replace preview failed') + ': ' + error.message);
             }
         };
         
@@ -804,64 +818,66 @@ app.registerExtension({
     },
     
     setup() {
-        setTimeout(function() {
+        const insertButton = () => {
             const existingTab = document.getElementById('pm-workflow-tab');
             if (existingTab) {
                 existingTab.remove();
             }
-            
+
             const sidebarGroups = document.querySelectorAll('.sidebar-item-group');
-            
+
             if (sidebarGroups.length > 0) {
                 const firstGroup = sidebarGroups[0];
-                
+
                 const allButtons = firstGroup.querySelectorAll('button');
                 let referenceButton = null;
-                
+
+                // 查找工作流按钮（支持中英文）
                 for (let i = 0; i < allButtons.length; i++) {
-                    if (allButtons[i].textContent && allButtons[i].textContent.indexOf('工作流') !== -1) {
+                    const text = allButtons[i].textContent || '';
+                    if (text.indexOf('工作流') !== -1 || text.indexOf('Workflow') !== -1) {
                         referenceButton = allButtons[i];
                         break;
                     }
                 }
-                
+
                 if (referenceButton) {
                     // 添加分隔线
                     const divider = document.createElement('div');
                     divider.style.cssText = 'height: 1px; background-color: rgba(255, 255, 255, 0.2); margin: 8px 16px; width: calc(100% - 32px);';
                     firstGroup.appendChild(divider);
-                    
+
                     const pmButton = referenceButton.cloneNode(true);
                     pmButton.id = 'pm-workflow-tab';
-                    
+
                     const label = pmButton.querySelector('.side-bar-button-label');
                     if (label) {
-                        label.textContent = 'PM工作流';
+                        label.textContent = t('pmWorkflow', 'PM Workflow');
                     }
-                    
+
                     const iconEl = pmButton.querySelector('.side-bar-button-icon, i');
                     if (iconEl) {
                         iconEl.outerHTML = '<svg class="side-bar-button-icon" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>';
                     }
-                    
+
                     pmButton.onclick = function() {
                         pmDialog.show();
                     };
-                    
+
                     firstGroup.appendChild(pmButton);
                 } else {
                     // 添加分隔线
                     const divider = document.createElement('div');
                     divider.style.cssText = 'height: 1px; background-color: rgba(255, 255, 255, 0.2); margin: 8px 16px; width: calc(100% - 32px);';
                     firstGroup.appendChild(divider);
-                    
+
                     const pmButton = document.createElement('button');
                     pmButton.id = 'pm-workflow-tab';
                     pmButton.className = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap appearance-none font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-[var(--comfy-menu-bg)] p-2 h-auto min-w-[40px] min-h-[40px] border-none';
-                    
+
                     const contentDiv = document.createElement('div');
                     contentDiv.className = 'side-bar-button-content';
-                    
+
                     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     iconSvg.setAttribute('class', 'side-bar-button-icon');
                     iconSvg.setAttribute('style', 'width: 20px; height: 20px;');
@@ -869,22 +885,36 @@ app.registerExtension({
                     iconSvg.setAttribute('stroke', 'currentColor');
                     iconSvg.setAttribute('viewBox', '0 0 24 24');
                     iconSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>';
-                    
+
                     const label = document.createElement('span');
                     label.className = 'side-bar-button-label';
-                    label.textContent = 'PM工作流';
-                    
+                    label.textContent = t('pmWorkflow', 'PM Workflow');
+
                     contentDiv.appendChild(iconSvg);
                     contentDiv.appendChild(label);
                     pmButton.appendChild(contentDiv);
-                    
+
                     pmButton.onclick = function() {
                         pmDialog.show();
                     };
-                    
+
                     firstGroup.appendChild(pmButton);
                 }
             }
-        }, 800);
+        };
+
+        // Try immediately first
+        setTimeout(insertButton, 800);
+
+        // Listen for locale changes to update button text
+        onLocaleChange(() => {
+            const button = document.getElementById('pm-workflow-tab');
+            if (button) {
+                const label = button.querySelector('.side-bar-button-label');
+                if (label) {
+                    label.textContent = t('pmWorkflow', 'PM Workflow');
+                }
+            }
+        });
     }
 });

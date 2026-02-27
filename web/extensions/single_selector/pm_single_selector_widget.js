@@ -6,6 +6,7 @@ import { PreviewTooltip } from "../common/preview_tooltip.js";
 import { createSingleSelectorContextMenu } from "./pm_single_selector_context_menu.js";
 import { fetchWithUser } from "../pm_model.js";
 import { app } from "/scripts/app.js";
+import { t, initPromise, onLocaleChange } from "../common/i18n.js";
 
 if (typeof window.lastMouseX === 'undefined') {
   window.lastMouseX = 0;
@@ -34,11 +35,15 @@ export function createSingleSelectorWidget(config) {
     contextMenuClass,
     modelType,
     emptyMessage,
+    emptyMessageKey,
     defaultHeight = 180,
     openDetailsFn
   } = config;
 
-  return function addWidget(node, name, opts, callback) {
+  return async function addWidget(node, name, opts, callback) {
+    // 等待翻译加载完成
+    await initPromise;
+
     ensurePmStyles();
 
     const container = document.createElement("div");
@@ -68,7 +73,7 @@ export function createSingleSelectorWidget(config) {
 
       if (modelsData.length === 0) {
         const emptyMessageEl = document.createElement("div");
-        emptyMessageEl.textContent = emptyMessage;
+        emptyMessageEl.textContent = t(emptyMessageKey, emptyMessage);
         emptyMessageEl.className = emptyStateClass;
         container.appendChild(emptyMessageEl);
         updateWidgetHeight(container, EMPTY_CONTAINER_HEIGHT, defaultHeight, node);
@@ -422,9 +427,15 @@ export function createSingleSelectorWidget(config) {
 
     renderModels(widget.value, widget);
 
+    // Listen for locale changes and re-render
+    const unsubscribeLocaleChange = onLocaleChange(() => {
+      renderModels(widget.value, widget);
+    });
+
     widget.onRemove = () => {
       previewTooltip.cleanup();
       container.remove();
+      unsubscribeLocaleChange();
     };
 
     return { minWidth: 400, minHeight: defaultHeight, widget };

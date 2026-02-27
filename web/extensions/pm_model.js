@@ -1,4 +1,5 @@
 import { app } from "/scripts/app.js";
+import { t, onLocaleChange } from "./common/i18n.js";
 
 function getComfyUserHeader() {
     try {
@@ -145,8 +146,8 @@ class PMModelDialog {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                                 </svg>
                             <div>
-                                <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">PM 模型管理器</h2>
-                                <p class="text-xs text-[var(--fg-light)]">管理您的 AI 模型文件</p>
+                                <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${t('pmModelManager', 'PM Model Manager')}</h2>
+                                <p class="text-xs text-[var(--fg-light)]">${t('pmModelManagerDesc', 'Manage your AI model files')}</p>
                             </div>
                         </div>
                         <button id="pm-model-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
@@ -159,7 +160,7 @@ class PMModelDialog {
                     </div>
                     <div class="p-4 overflow-y-auto flex-grow">
                         <div id="pm-model-list" class="grid grid-cols-5 gap-4">
-                            <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                            <div class="text-center py-8 text-[var(--fg-light)]">${t('loading', 'Loading...')}</div>
                         </div>
                     </div>
                 </div>
@@ -189,7 +190,7 @@ class PMModelDialog {
             this.renderItems();
         } catch (error) {
             const listEl = this.dialog.querySelector('#pm-model-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-red-500">加载失败</div>';
+            listEl.innerHTML = `<div class="text-center py-8 text-red-500">${t('loadingFailed', 'Loading failed')}</div>`;
         }
     }
 
@@ -205,15 +206,15 @@ class PMModelDialog {
         if (parts.length > 0) {
             const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip';
             if (isRestricted) {
-                html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg-light)] font-medium">根目录</span>`;
+                html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg-light)] font-medium">${t('rootDirectory', 'Root')}</span>`;
             } else {
-                html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">根目录</button>`;
+                html += `<button class="breadcrumb-item px-3 py-1 rounded-lg hover:bg-[var(--comfy-input-bg)] transition-all duration-200 text-[var(--fg-light)] hover:text-[var(--fg)]" data-path="">${t('rootDirectory', 'Root')}</button>`;
             }
             html += `<svg class="w-4 h-4 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>`;
         } else {
-            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">根目录</span>`;
+            html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">${t('rootDirectory', 'Root')}</span>`;
         }
         
         let currentPath = '';
@@ -267,7 +268,7 @@ class PMModelDialog {
         const listEl = this.dialog.querySelector('#pm-model-list');
         
         if (this.items.length === 0) {
-            listEl.innerHTML = '<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">暂无内容</div>';
+            listEl.innerHTML = `<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">${t('noContent', 'No content')}</div>`;
         } else {
             listEl.innerHTML = this.items.map((item, index) => {
                 const isFolder = item.type === 'folder';
@@ -336,7 +337,7 @@ class PMModelDialog {
                                         </div>`
                             }
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
-                                <button class="pm-model-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="详细信息">
+                                <button class="pm-model-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="${t('viewDetails', 'View Details')}">
                                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
@@ -417,6 +418,7 @@ class PMModelDialog {
         this.selectMode = false;
         this.targetNode = null;
         this.targetType = null;
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('');
     }
@@ -600,6 +602,18 @@ class PMModelDialog {
         this.contextMenu.className = 'pm-context-menu';
     }
 
+    updateDialogTranslations() {
+        // Update title and description
+        const titleEl = this.dialog.querySelector('h2');
+        if (titleEl) {
+            titleEl.textContent = t('pmModelManager', 'PM Model Manager');
+        }
+        const descEl = this.dialog.querySelector('p.text-xs');
+        if (descEl) {
+            descEl.textContent = t('pmModelManagerDesc', 'Manage your AI model files');
+        }
+    }
+
     updateContextMenu(isItemMenu) {
         if (isItemMenu) {
             this.contextMenu.innerHTML = `
@@ -607,14 +621,14 @@ class PMModelDialog {
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    详细信息
+                    ${t('viewDetails', 'View Details')}
                 </div>
                 <div class="pm-context-menu-divider"></div>
                 <div class="pm-context-menu-item" data-action="replace-preview">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    替换预览图
+                    ${t('replacePreview', 'Replace Preview')}
                 </div>
             `;
         } else {
@@ -639,12 +653,12 @@ class PMModelDialog {
         this.promptDialog.innerHTML = `
             <div class="pm-prompt-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-prompt-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">重命名</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">${t('rename', 'Rename')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-4" id="pm-prompt-message"></p>
                 <input type="text" id="pm-prompt-input" class="w-full px-4 py-2 rounded-lg bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] mb-4 focus:outline-none focus:border-purple-500">
                 <div class="flex justify-end gap-3">
-                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity">确定</button>
+                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 hover:scale-105 border-0">${t('confirm', 'Confirm')}</button>
                 </div>
             </div>
         `;
@@ -698,11 +712,11 @@ class PMModelDialog {
         this.confirmDialog.innerHTML = `
             <div class="pm-confirm-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-confirm-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">确认</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">${t('confirm', 'Confirm')}</h3>
                 <p class="text-sm text-[var(--fg-light)] mb-6" id="pm-confirm-message"></p>
                 <div class="flex justify-end gap-3">
-                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors">取消</button>
-                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">删除</button>
+                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
+                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200 hover:scale-105 border-0">${t('delete', 'Delete')}</button>
                 </div>
             </div>
         `;
@@ -728,7 +742,7 @@ class PMModelDialog {
         
         this.confirmDialog.querySelector('#pm-confirm-title').textContent = title;
         this.confirmDialog.querySelector('#pm-confirm-message').textContent = message;
-        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || '确定';
+        this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || t('confirm', 'Confirm');
         this.confirmCallback = callback;
         this.confirmDialog.style.display = 'flex';
     }
@@ -831,11 +845,11 @@ class PMModelDialog {
                     await this.loadItems(this.currentPath);
                 } else {
                     const errorText = await response.text();
-                    alert('替换预览图失败: ' + errorText);
+                    alert(t('replacePreviewFailed', 'Replace preview failed') + ': ' + errorText);
                 }
             } catch (error) {
                 console.error('Replace preview error:', error);
-                alert('替换预览图失败: ' + error.message);
+                alert(t('replacePreviewFailed', 'Replace preview failed') + ': ' + error.message);
             }
         };
         
@@ -893,7 +907,7 @@ class PMModelDialog {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="pm-info-title">详细信息</h3>
+                        <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="pm-info-title">${t('fileDetails', 'File Details')}</h3>
                     </div>
                     <button id="pm-info-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -902,7 +916,7 @@ class PMModelDialog {
                     </button>
                 </div>
                 <div id="pm-info-body" class="overflow-y-auto flex-grow p-6">
-                    <div class="text-center py-8 text-[var(--fg-light)]">加载中...</div>
+                    <div class="text-center py-8 text-[var(--fg-light)]">${t('loading', 'Loading...')}</div>
                 </div>
             </div>
         `;
@@ -973,7 +987,7 @@ class PMModelDialog {
                             <img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                             <div class="absolute bottom-4 left-4 right-4">
-                                <p class="text-white font-semibold text-sm opacity-90">预览图</p>
+                                <p class="text-white font-semibold text-sm opacity-90">${t('preview', 'Preview')}</p>
                             </div>
                         </div>
                     </div>
@@ -986,24 +1000,24 @@ class PMModelDialog {
             if (info.type !== 'folder') {
                 html += `
                     <div class="info-item rounded-lg p-3">
-                        <p class="info-label mb-2">标题</p>
+                        <p class="info-label mb-2">${t('title', 'Title')}</p>
                         <div class="flex items-center justify-between gap-2" data-field="title">
                             <div class="flex items-center gap-2 flex-1 overflow-hidden">
                                 <span class="pm-field-display text-[var(--fg)] font-medium truncate">${info.title || '-'}</span>
                             </div>
-                            <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="编辑">
+                            <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="${t('edit', 'Edit')}">
                                 <svg class="w-5 h-5 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                 </svg>
                             </button>
                             <div class="pm-field-edit hidden flex-1 flex gap-1 min-w-0">
-                                <input type="text" class="pm-field-input flex-1 px-2 py-1.5 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-sm" data-original="${info.title || ''}" value="${info.title || ''}" placeholder="输入标题...">
-                                <button class="pm-save-btn px-2 py-1.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="保存">
+                                <input type="text" class="pm-field-input flex-1 px-2 py-1.5 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-sm" data-original="${info.title || ''}" value="${info.title || ''}" placeholder="${t('enterTitle', 'Enter title...')}">
+                                <button class="pm-save-btn px-2 py-1.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="${t('save', 'Save')}">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
                                 </button>
-                                <button class="pm-cancel-btn px-2 py-1.5 rounded hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors flex-shrink-0" title="取消">
+                                <button class="pm-cancel-btn px-2 py-1.5 rounded hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors flex-shrink-0" title="${t('cancel', 'Cancel')}">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
@@ -1013,24 +1027,24 @@ class PMModelDialog {
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="info-item rounded-lg p-3">
-                            <p class="info-label mb-2">步数</p>
+                            <p class="info-label mb-2">${t('steps', 'Steps')}</p>
                             <div class="flex items-center justify-between gap-2" data-field="steps">
                                 <div class="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
                                     <span class="pm-field-display text-[var(--fg)] font-medium truncate">${info.metadata?.steps || '-'}</span>
                                 </div>
-                                <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="编辑">
+                                <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="${t('edit', 'Edit')}">
                                     <svg class="w-5 h-5 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                     </svg>
                                 </button>
                                 <div class="pm-field-edit hidden flex-1 flex gap-1 min-w-0">
-                                    <input type="number" class="pm-field-input flex-1 px-1.5 py-1 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-xs" data-original="${info.metadata?.steps || ''}" value="${info.metadata?.steps || ''}" placeholder="步数">
-                                    <button class="pm-save-btn px-1.5 py-1 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="保存">
+                                    <input type="number" class="pm-field-input flex-1 px-1.5 py-1 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-xs" data-original="${info.metadata?.steps || ''}" value="${info.metadata?.steps || ''}" placeholder="${t('steps', 'Steps')}">
+                                    <button class="pm-save-btn px-1.5 py-1 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="${t('save', 'Save')}">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                     </button>
-                                    <button class="pm-cancel-btn px-1.5 py-1 rounded text-[var(--fg-light)] hover:text-[var(--fg)] transition-colors flex-shrink-0" title="取消">
+                                    <button class="pm-cancel-btn px-1.5 py-1 rounded text-[var(--fg-light)] hover:text-[var(--fg)] transition-colors flex-shrink-0" title="${t('cancel', 'Cancel')}">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
@@ -1039,24 +1053,24 @@ class PMModelDialog {
                             </div>
                         </div>
                         <div class="info-item rounded-lg p-3">
-                            <p class="info-label mb-2">CFG</p>
+                            <p class="info-label mb-2">${t('cfgScale', 'CFG Scale')}</p>
                             <div class="flex items-center justify-between gap-2" data-field="cfg">
                                 <div class="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
                                     <span class="pm-field-display text-[var(--fg)] font-medium truncate">${info.metadata?.cfg || '-'}</span>
                                 </div>
-                                <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="编辑">
+                                <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="${t('edit', 'Edit')}">
                                     <svg class="w-5 h-5 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                     </svg>
                                 </button>
                                 <div class="pm-field-edit hidden flex-1 flex gap-1 min-w-0">
-                                    <input type="number" step="0.1" class="pm-field-input flex-1 px-1.5 py-1 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-xs" data-original="${info.metadata?.cfg || ''}" value="${info.metadata?.cfg || ''}" placeholder="CFG">
-                                    <button class="pm-save-btn px-1.5 py-1 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="保存">
+                                    <input type="number" step="0.1" class="pm-field-input flex-1 px-1.5 py-1 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-xs" data-original="${info.metadata?.cfg || ''}" value="${info.metadata?.cfg || ''}" placeholder="${t('cfgScale', 'CFG Scale')}">
+                                    <button class="pm-save-btn px-1.5 py-1 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="${t('save', 'Save')}">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                     </button>
-                                    <button class="pm-cancel-btn px-1.5 py-1 rounded text-[var(--fg-light)] hover:text-[var(--fg)] transition-colors flex-shrink-0" title="取消">
+                                    <button class="pm-cancel-btn px-1.5 py-1 rounded text-[var(--fg-light)] hover:text-[var(--fg)] transition-colors flex-shrink-0" title="${t('cancel', 'Cancel')}">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
@@ -1085,7 +1099,7 @@ class PMModelDialog {
             if (info.type === 'folder' && info.file_count !== undefined) {
                 html += `
                     <div class="info-item rounded-lg p-3">
-                        <p class="info-label mb-1">文件数量</p>
+                        <p class="info-label mb-1">${t('fileCount', 'File Count')}</p>
                         <p class="info-value">${info.file_count}</p>
                     </div>
                 `;
@@ -1094,11 +1108,11 @@ class PMModelDialog {
             html += `
                 <div class="grid grid-cols-2 gap-3">
                     <div class="info-item rounded-lg p-3">
-                        <p class="info-label mb-1">创建时间</p>
+                        <p class="info-label mb-1">${t('createdTime', 'Created Time')}</p>
                         <p class="info-value text-sm">${info.created_time || '-'}</p>
                     </div>
                     <div class="info-item rounded-lg p-3">
-                        <p class="info-label mb-1">修改时间</p>
+                        <p class="info-label mb-1">${t('modifiedTime', 'Modified Time')}</p>
                         <p class="info-value text-sm">${info.modified_time || '-'}</p>
                     </div>
                 </div>
@@ -1180,7 +1194,7 @@ class PMModelDialog {
             }
         } catch (error) {
             console.error('Load info error:', error);
-            bodyEl.innerHTML = '<div class="text-center py-8 text-red-500">加载失败</div>';
+            bodyEl.innerHTML = `<div class="text-center py-8 text-red-500">${t('loadingFailed', 'Loading failed')}</div>`;
         }
     }
 
@@ -1223,34 +1237,34 @@ app.registerExtension({
             if (existingTab) {
                 existingTab.remove();
             }
-            
+
             const sidebarGroups = document.querySelectorAll('.sidebar-item-group');
-            
+
             if (sidebarGroups.length > 0) {
                 const firstGroup = sidebarGroups[0];
-                
+
                 // Find PM workflow button first
                 const pmWorkflowButton = document.getElementById('pm-workflow-tab');
-                
+
                 if (pmWorkflowButton) {
                     // Insert after PM workflow button
                     const pmButton = pmWorkflowButton.cloneNode(true);
                     pmButton.id = 'pm-model-tab';
-                    
+
                     const label = pmButton.querySelector('.side-bar-button-label');
                     if (label) {
-                        label.textContent = 'PM模型';
+                        label.textContent = t('pmModel', 'PM Model');
                     }
-                    
+
                     const iconEl = pmButton.querySelector('.side-bar-button-icon, svg');
                     if (iconEl) {
                         iconEl.outerHTML = '<svg class="side-bar-button-icon" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>';
                     }
-                    
+
                     pmButton.onclick = function() {
                         pmModelDialog.show();
                     };
-                    
+
                     // Insert after workflow button
                     if (pmWorkflowButton.nextSibling) {
                         firstGroup.insertBefore(pmButton, pmWorkflowButton.nextSibling);
@@ -1265,28 +1279,39 @@ app.registerExtension({
             }
             return false;
         };
-        
+
         // Try immediately first
         if (insertButton()) {
-            return;
+            // return;
         }
-        
+
         // Use MutationObserver to wait for workflow button
         const observer = new MutationObserver((mutations, obs) => {
             if (insertButton()) {
                 obs.disconnect();
             }
         });
-        
+
         observer.observe(document.body, {
             childList: true,
             subtree: true
         });
-        
+
         // Fallback: try again after 1000ms (give workflow time to insert first)
         setTimeout(() => {
             observer.disconnect();
             insertButton();
         }, 1000);
+
+        // Listen for locale changes to update button text
+        onLocaleChange(() => {
+            const button = document.getElementById('pm-model-tab');
+            if (button) {
+                const label = button.querySelector('.side-bar-button-label');
+                if (label) {
+                    label.textContent = t('pmModel', 'PM Model');
+                }
+            }
+        });
     }
 });

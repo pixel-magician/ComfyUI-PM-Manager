@@ -11,6 +11,7 @@ export const addVaesWidget = createSingleSelectorWidget({
   contextMenuClass: "pm-vae",
   modelType: "vae",
   emptyMessage: "No VAEs added",
+  emptyMessageKey: "noVAEsAdded",
   defaultHeight: 180,
   openDetailsFn: createOpenDetailsFn()
 });
