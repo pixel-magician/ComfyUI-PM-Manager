@@ -3,6 +3,33 @@ import { api } from "/scripts/api.js";
 
 let pmInputManagerCache = null;
 
+async function uploadFile(file, progressCallback) {
+  try {
+    const body = new FormData();
+    const new_file = new File([file], file.name, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+    body.append("image", new_file);
+
+    const url = api.apiURL("/upload/image");
+    const resp = await new Promise((resolve) => {
+      let req = new XMLHttpRequest();
+      req.upload.onprogress = (e) => progressCallback?.(e.loaded/e.total);
+      req.onload = () => resolve(req);
+      req.open('post', url, true);
+      req.send(body);
+    });
+
+    if (resp.status !== 200) {
+      alert(resp.status + " - " + resp.statusText);
+    }
+    return resp;
+  } catch (error) {
+    alert(error);
+  }
+}
+
 function findPMInputManager() {
   if (pmInputManagerCache) {
     return pmInputManagerCache;
@@ -88,10 +115,68 @@ app.registerExtension({
         this.serialize_widgets = true;
         this.pm_selected_image = null;
         this.pm_directory_type = 'input';
-        
+
         const node = this;
-        
-        // 先添加按钮
+        const pathWidget = this.widgets.find((w) => w.name === "image");
+        const fileInput = document.createElement("input");
+
+        const onNodeRemoved = this.onRemoved;
+        this.onRemoved = () => {
+          fileInput?.remove();
+          if (onNodeRemoved) {
+            onNodeRemoved.apply(this, arguments);
+          }
+        };
+
+        const imageAccept = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif", "image/bmp", "image/tiff"];
+
+        async function doUpload(file) {
+          let resp = await uploadFile(file, (p) => node.progress = p);
+          node.progress = undefined;
+          if (resp.status != 200) {
+            return false;
+          }
+          const filename = JSON.parse(resp.responseText).name;
+          pathWidget.options.values.push(filename);
+          pathWidget.value = filename;
+          if (pathWidget.callback) {
+            pathWidget.callback(filename);
+          }
+          return true;
+        }
+
+        Object.assign(fileInput, {
+          type: "file",
+          accept: imageAccept.join(','),
+          style: "display: none",
+          onchange: async () => {
+            if (fileInput.files.length) {
+              return await doUpload(fileInput.files[0]);
+            }
+          },
+        });
+
+        this.onDragOver = (e) => !!e?.dataTransfer?.types?.includes?.('Files');
+        this.onDragDrop = async function(e) {
+          if (!e?.dataTransfer?.types?.includes?.('Files')) {
+            return false;
+          }
+          const item = e.dataTransfer?.files?.[0];
+          if (imageAccept.includes(item?.type) || item?.name?.toLowerCase().match(/\.(png|jpg|jpeg|webp|gif|bmp|tiff)$/)) {
+            return await doUpload(item);
+          }
+          return false;
+        };
+
+        document.body.append(fileInput);
+
+        let uploadWidget = this.addWidget("button", "上传图片", "image", () => {
+          app.canvas.node_widget = null;
+          fileInput.click();
+        });
+        uploadWidget.options.serialize = false;
+
+        // 添加选择文件按钮
         this.addWidget("button", "从输入选择文件", null, async () => {
           await openPMInputManagerForImage(this, 'input');
         });
