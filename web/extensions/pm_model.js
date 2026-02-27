@@ -1,5 +1,5 @@
 import { app } from "/scripts/app.js";
-import { t, onLocaleChange } from "./common/i18n.js";
+import { t, initPromise, onLocaleChange } from "./common/i18n.js";
 
 function getComfyUserHeader() {
     try {
@@ -427,6 +427,8 @@ class PMModelDialog {
         this.selectMode = true;
         this.targetNode = node;
         this.targetType = 'unet';
+        await initPromise;
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('unet');
     }
@@ -435,6 +437,8 @@ class PMModelDialog {
         this.selectMode = true;
         this.targetNode = node;
         this.targetType = 'lora';
+        await initPromise;
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('loras');
     }
@@ -443,6 +447,8 @@ class PMModelDialog {
         this.selectMode = true;
         this.targetNode = node;
         this.targetType = 'vae';
+        await initPromise;
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('vae');
     }
@@ -451,6 +457,8 @@ class PMModelDialog {
         this.selectMode = true;
         this.targetNode = node;
         this.targetType = 'clip';
+        await initPromise;
+        this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('clip');
     }

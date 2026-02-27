@@ -16,11 +16,11 @@ export function createLoader(config) {
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
       if (comfyClasses.includes(nodeType.comfyClass)) {
         const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function() {
+        nodeType.prototype.onNodeCreated = function() {
           if (originalOnNodeCreated) {
             originalOnNodeCreated.apply(this, arguments);
           }
-          await setupNode(this, {
+          setupNode(this, {
             widgetPropertyName,
             addWidgetFn,
             openMethodName

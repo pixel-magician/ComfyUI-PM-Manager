@@ -26,10 +26,7 @@ if (typeof window.pmDragState === 'undefined') {
   };
 }
 
-export async function addLorasWidget(node, name, opts, callback) {
-  // 等待翻译加载完成
-  await initPromise;
-
+export function addLorasWidget(node, name, opts, callback) {
   ensurePmStyles();
 
   const container = document.createElement("div");

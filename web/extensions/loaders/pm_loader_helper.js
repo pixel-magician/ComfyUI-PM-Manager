@@ -25,10 +25,7 @@ export async function openPMModelManager(node, openMethodName) {
   }
 }
 
-export async function setupNode(node, config) {
-  // 等待翻译加载完成
-  await initPromise;
-
+export function setupNode(node, config) {
   const {
     widgetPropertyName,
     addWidgetFn,
@@ -39,13 +36,22 @@ export async function setupNode(node, config) {
 
   node.serialize_widgets = true;
 
-  const buttonWidget = node.addWidget("button", t(buttonLabelKey, buttonLabelDefault), null, async () => {
+  // Create button widget with default label first
+  const buttonWidget = node.addWidget("button", buttonLabelDefault, null, async () => {
     await openPMModelManager(node, openMethodName);
   });
 
   // Store original key for language switching
   buttonWidget._pmLabelKey = buttonLabelKey;
   buttonWidget._pmLabelDefault = buttonLabelDefault;
+
+  // Update button label after translations are loaded
+  initPromise.then(() => {
+    buttonWidget.name = t(buttonLabelKey, buttonLabelDefault);
+    if (app.graph) {
+      app.graph.setDirtyCanvas(true, true);
+    }
+  });
 
   node.pm_selected_model = null;
   node.pm_metadata = {};

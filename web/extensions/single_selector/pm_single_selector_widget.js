@@ -40,10 +40,7 @@ export function createSingleSelectorWidget(config) {
     openDetailsFn
   } = config;
 
-  return async function addWidget(node, name, opts, callback) {
-    // 等待翻译加载完成
-    await initPromise;
-
+  return function addWidget(node, name, opts, callback) {
     ensurePmStyles();
 
     const container = document.createElement("div");
