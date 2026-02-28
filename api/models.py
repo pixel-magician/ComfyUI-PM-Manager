@@ -200,12 +200,29 @@ async def get_pm_model_preview(request):
     lora_extensions = (".safetensors", ".pt", ".pth", ".bin", ".ckpt")
     found_model = None
 
+    # Normalize model_path to use forward slashes for comparison
+    model_path_normalized = model_path.replace('\\', '/')
+    model_path_parts = model_path_normalized.split('/')
+    model_name_only = model_path_parts[-1] if model_path_parts else model_path_normalized
+
     for root, dirs, files in os.walk(pm_models_dir):
         for file in files:
             if file.endswith(lora_extensions):
                 name_without_ext = os.path.splitext(file)[0]
-                if name_without_ext == model_path or file == model_path:
+                # Check if model_path matches just the filename or the full relative path
+                if (name_without_ext == model_path or 
+                    file == model_path or
+                    name_without_ext == model_name_only or
+                    file == model_name_only):
                     found_model = os.path.join(root, file)
+                    break
+                # Also check if the relative path from pm_models_dir matches
+                full_file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_file_path, pm_models_dir)
+                rel_path_normalized = rel_path.replace('\\', '/')
+                rel_path_without_ext = os.path.splitext(rel_path_normalized)[0]
+                if rel_path_normalized == model_path_normalized or rel_path_without_ext == model_path_normalized:
+                    found_model = full_file_path
                     break
         if found_model:
             break
