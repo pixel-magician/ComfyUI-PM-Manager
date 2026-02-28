@@ -14,7 +14,8 @@ export function parseLoraValue(value) {
     expanded: item.expanded || false,
     locked: item.locked || false,
     strength: item.strength || 1.0,
-    clipStrength: item.clipStrength || 1.0
+    clipStrength: item.clipStrength || 1.0,
+    title: item.title || ''
   }));
 }
 
@@ -28,7 +29,8 @@ export function formatLoraValue(data) {
     expanded: item.expanded,
     locked: item.locked,
     strength: item.strength,
-    clipStrength: item.clipStrength
+    clipStrength: item.clipStrength,
+    title: item.title || ''
   }));
 }
 

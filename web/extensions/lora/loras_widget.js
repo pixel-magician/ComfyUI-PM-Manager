@@ -134,7 +134,10 @@ export function addLorasWidget(node, name, opts, callback) {
     let totalVisibleEntries = lorasData.length;
 
     lorasData.forEach((loraData) => {
-      const { name, active, strength, clipStrength, expanded } = loraData;
+      const { name, active, strength, clipStrength, expanded, title } = loraData;
+      // Priority: title > filename
+      const fileName = name.split('/').pop();
+      const displayName = title || fileName;
 
       const loraEl = document.createElement("div");
       loraEl.className = "pm-lora-entry";
@@ -370,7 +373,7 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       const nameEl = document.createElement("div");
-      nameEl.textContent = name;
+      nameEl.textContent = displayName;
       nameEl.className = "pm-lora-name";
 
       // Preview tooltip on hover (on the entire entry, not just name)
@@ -506,7 +509,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         const clipName = document.createElement('span');
         clipName.className = 'pm-lora-name';
-        clipName.textContent = name;
+        clipName.textContent = displayName;
         clipName.style.marginLeft = '8px';
 
         const onClipStrengthChange = (newStrength) => {

@@ -56,6 +56,10 @@ export function createStrengthControl(strength, onChange, onDecrease, onIncrease
     onChange(value);
   });
 
+  input.addEventListener('focus', (e) => {
+    e.target.select();
+  });
+
   const rightArrow = createArrowButton('right', onIncrease);
 
   control.appendChild(leftArrow);
