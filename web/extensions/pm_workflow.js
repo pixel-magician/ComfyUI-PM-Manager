@@ -148,11 +148,19 @@ class PMWorkflowDialog {
                                 <p class="text-xs text-[var(--fg-light)]">${t('pmWorkflowManagerDesc', 'Manage and preview your workflows')}</p>
                             </div>
                         </div>
-                        <button id="pm-workflow-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="pm-workflow-save-current" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30 border-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                                </svg>
+                                <span>${t('saveCurrentWorkflow', 'Save Current')}</span>
+                            </button>
+                            <button id="pm-workflow-close" class="p-2 hover:bg-[var(--comfy-input-bg)] rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg border-0">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div id="pm-workflow-breadcrumb" class="px-6 py-3 border-b border-[var(--border-color)] flex items-center gap-2 text-sm flex-shrink-0 bg-[var(--comfy-input-bg)]/20">
                     </div>
@@ -169,12 +177,17 @@ class PMWorkflowDialog {
         
         const closeBtn = this.dialog.querySelector('#pm-workflow-close');
         const overlay = this.dialog.querySelector('#pm-workflow-overlay');
-        
+        const saveCurrentBtn = this.dialog.querySelector('#pm-workflow-save-current');
+
         closeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.close();
         });
         overlay.addEventListener('click', () => this.close());
+        saveCurrentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.saveCurrentWorkflow();
+        });
     }
 
     async loadItems(path = '') {
@@ -309,14 +322,14 @@ class PMWorkflowDialog {
             card.addEventListener('click', () => {
                 const path = card.dataset.path;
                 const type = card.dataset.type;
-                
+
                 if (type === 'folder') {
                     this.loadItems(path);
                 } else {
                     this.loadWorkflow(path);
                 }
             });
-            
+
             card.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -338,31 +351,170 @@ class PMWorkflowDialog {
         try {
             const response = await fetchWithUser(`/pm_workflow/load/${encodeURIComponent(path)}`);
             const workflowData = await response.json();
-            
+
             if (workflowData) {
                 const filename = path.split(/[/\\]/).pop();
                 const workflowName = filename.endsWith('.json') ? filename.slice(0, -5) : filename;
-                
+
                 workflowData.extra = workflowData.extra || {};
                 workflowData.extra.workflow_name = workflowName;
                 workflowData.extra.workflow_path = path;
-                
+
                 await app.loadGraphData(workflowData, true, true, workflowName);
-                
+
                 if (app.graph) {
                     app.graph.extra = app.graph.extra || {};
                     app.graph.extra.workflow_name = workflowName;
                     app.graph.extra.workflow_path = path;
                 }
-                
+
                 if (app.workflowManager) {
                     app.workflowManager.currentWorkflowName = workflowName;
                 }
-                
+
                 this.close();
             }
         } catch (error) {
             alert(t('loadWorkflowFailed', 'Failed to load workflow'));
+        }
+    }
+
+    async saveCurrentWorkflow() {
+        try {
+            let workflowData = null;
+            let workflowName = '';
+
+            if (app.graph) {
+                workflowData = app.graph.serialize();
+            }
+
+            if (!workflowData) {
+                alert(t('noWorkflowToSave', 'No workflow to save'));
+                return;
+            }
+
+            if (app.workflowManager && app.workflowManager.activeWorkflow) {
+                const activeWorkflow = app.workflowManager.activeWorkflow;
+                workflowName = activeWorkflow.name || activeWorkflow.path || '';
+            }
+
+            if (!workflowName) {
+                workflowName = 'workflow';
+            }
+
+            workflowName = workflowName.replace(/\.json$/i, '');
+
+            this.showPromptDialog(
+                t('saveCurrentWorkflowTitle', 'Save Current Workflow'),
+                t('enterWorkflowNameWithPath', 'Please enter workflow name (supports relative path like "folder/workflow"):'),
+                workflowName,
+                async (name) => {
+                    if (!name || name.trim() === '') return;
+
+                    let savePath = name.trim();
+                    savePath = savePath.replace(/\\/g, '/');
+
+                    let targetDir = this.currentPath;
+                    let fileName = savePath;
+
+                    if (savePath.includes('/')) {
+                        const parts = savePath.split('/');
+                        fileName = parts.pop();
+                        const relativeDir = parts.join('/');
+
+                        if (relativeDir.startsWith('/')) {
+                            targetDir = relativeDir.substring(1);
+                        } else {
+                            targetDir = targetDir ? `${targetDir}/${relativeDir}` : relativeDir;
+                        }
+                    }
+
+                    if (!fileName.endsWith('.json')) {
+                        fileName += '.json';
+                    }
+
+                    try {
+                        const response = await fetchWithUser('/pm_workflow/save', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: fileName.replace(/\.json$/i, ''),
+                                workflow: workflowData,
+                                path: targetDir
+                            })
+                        });
+
+                        if (response.ok) {
+                            await this.loadItems(this.currentPath);
+                            alert(t('workflowSaved', 'Workflow saved successfully'));
+                        } else {
+                            const errorText = await response.text();
+                            alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + errorText);
+                        }
+                    } catch (error) {
+                        console.error('Save workflow error:', error);
+                        alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + error.message);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Save current workflow error:', error);
+            alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + error.message);
+        }
+    }
+
+    async overwriteWorkflow(path) {
+        try {
+            let workflowData = null;
+
+            if (app.graph) {
+                workflowData = app.graph.serialize();
+            }
+
+            if (!workflowData) {
+                alert(t('noWorkflowToSave', 'No workflow to save'));
+                return;
+            }
+
+            const filename = path.split(/[/\\]/).pop();
+            const workflowName = filename.endsWith('.json') ? filename.slice(0, -5) : filename;
+            const targetDir = this.currentPath;
+
+            const confirmMsg = `${t('confirmOverwriteWorkflow', 'Are you sure you want to overwrite')} "${workflowName}"? ${t('thisActionCannotBeUndone', 'This action cannot be undone.')}`;
+
+            this.showConfirmDialog(
+                t('confirmOverwrite', 'Confirm Overwrite'),
+                confirmMsg,
+                t('overwrite', 'Overwrite'),
+                async (confirmed) => {
+                    if (!confirmed) return;
+
+                    try {
+                        const response = await fetchWithUser('/pm_workflow/save', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: workflowName,
+                                workflow: workflowData,
+                                path: targetDir
+                            })
+                        });
+
+                        if (response.ok) {
+                            await this.loadItems(this.currentPath);
+                        } else {
+                            const errorText = await response.text();
+                            alert(t('overwriteWorkflowFailed', 'Failed to overwrite workflow') + ': ' + errorText);
+                        }
+                    } catch (error) {
+                        console.error('Overwrite workflow error:', error);
+                        alert(t('overwriteWorkflowFailed', 'Failed to overwrite workflow') + ': ' + error.message);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Overwrite workflow error:', error);
+            alert(t('overwriteWorkflowFailed', 'Failed to overwrite workflow') + ': ' + error.message);
         }
     }
 
@@ -393,10 +545,25 @@ class PMWorkflowDialog {
         if (descEl) {
             descEl.textContent = t('pmWorkflowManagerDesc', 'Manage and preview your workflows');
         }
+        // Update save button text
+        const saveBtn = this.dialog.querySelector('#pm-workflow-save-current span');
+        if (saveBtn) {
+            saveBtn.textContent = t('saveCurrentWorkflow', 'Save Current');
+        }
     }
 
-    updateContextMenu(isItemMenu) {
+    updateContextMenu(isItemMenu, isFolder = false) {
         if (isItemMenu) {
+            const overwriteOption = !isFolder ? `
+                <div class="pm-context-menu-divider"></div>
+                <div class="pm-context-menu-item" data-action="overwrite">
+                    <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    ${t('overwriteWithCurrent', 'Overwrite with Current')}
+                </div>
+            ` : '';
+
             this.contextMenu.innerHTML = `
                 <div class="pm-context-menu-item" data-action="rename">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,6 +577,7 @@ class PMWorkflowDialog {
                     </svg>
                     ${t('replacePreview', 'Replace Preview')}
                 </div>
+                ${overwriteOption}
                 <div class="pm-context-menu-divider"></div>
                 <div class="pm-context-menu-item danger" data-action="delete">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -453,12 +621,12 @@ class PMWorkflowDialog {
         this.promptDialog.innerHTML = `
             <div class="pm-prompt-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-prompt-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title">${t('rename', 'Rename')}</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-prompt-title"></h3>
                 <p class="text-sm text-[var(--fg-light)] mb-4" id="pm-prompt-message"></p>
                 <input type="text" id="pm-prompt-input" class="w-full px-4 py-2 rounded-lg bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] mb-4 focus:outline-none focus:border-purple-500">
                 <div class="flex justify-end gap-3">
-                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
-                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 hover:scale-105 border-0">${t('confirm', 'Confirm')}</button>
+                    <button id="pm-prompt-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0"></button>
+                    <button id="pm-prompt-confirm" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 hover:scale-105 border-0"></button>
                 </div>
             </div>
         `;
@@ -487,9 +655,11 @@ class PMWorkflowDialog {
         if (!this.promptDialog) {
             this.createPromptDialog();
         }
-        
+
         this.promptDialog.querySelector('#pm-prompt-title').textContent = title;
         this.promptDialog.querySelector('#pm-prompt-message').textContent = message;
+        this.promptDialog.querySelector('#pm-prompt-cancel').textContent = t('cancel', 'Cancel');
+        this.promptDialog.querySelector('#pm-prompt-confirm').textContent = t('confirm', 'Confirm');
         const input = this.promptDialog.querySelector('#pm-prompt-input');
         input.value = defaultValue || '';
         this.promptCallback = callback;
@@ -512,11 +682,11 @@ class PMWorkflowDialog {
         this.confirmDialog.innerHTML = `
             <div class="pm-confirm-overlay fixed inset-0 bg-black/50" style="z-index: 1;"></div>
             <div class="pm-confirm-content relative border border-[var(--border-color)] rounded-xl shadow-2xl p-6 w-full max-w-md" style="z-index: 2; background-color: var(--comfy-menu-bg);">
-                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title">${t('confirm', 'Confirm')}</h3>
+                <h3 class="text-lg font-bold mb-4 text-[var(--fg)]" id="pm-confirm-title"></h3>
                 <p class="text-sm text-[var(--fg-light)] mb-6" id="pm-confirm-message"></p>
                 <div class="flex justify-end gap-3">
-                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0">${t('cancel', 'Cancel')}</button>
-                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200 hover:scale-105 border-0">${t('delete', 'Delete')}</button>
+                    <button id="pm-confirm-cancel" class="px-4 py-2 rounded-lg hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-all duration-200 hover:scale-105 border-0"></button>
+                    <button id="pm-confirm-confirm" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200 hover:scale-105 border-0"></button>
                 </div>
             </div>
         `;
@@ -539,9 +709,10 @@ class PMWorkflowDialog {
         if (!this.confirmDialog) {
             this.createConfirmDialog();
         }
-        
+
         this.confirmDialog.querySelector('#pm-confirm-title').textContent = title;
         this.confirmDialog.querySelector('#pm-confirm-message').textContent = message;
+        this.confirmDialog.querySelector('#pm-confirm-cancel').textContent = t('cancel', 'Cancel');
         this.confirmDialog.querySelector('#pm-confirm-confirm').textContent = confirmText || t('confirm', 'Confirm');
         this.confirmCallback = callback;
         this.confirmDialog.style.display = 'flex';
@@ -572,10 +743,11 @@ class PMWorkflowDialog {
 
     showContextMenu(x, y, item = null) {
         if (item) {
-            this.updateContextMenu(true);
+            const isFolder = item.type === 'folder';
+            this.updateContextMenu(true, isFolder);
             this.currentContextItem = item;
         } else {
-            this.updateContextMenu(false);
+            this.updateContextMenu(false, false);
             this.currentContextItem = null;
         }
         
@@ -611,6 +783,9 @@ class PMWorkflowDialog {
                 break;
             case 'replace-preview':
                 await this.replacePreview(item);
+                break;
+            case 'overwrite':
+                await this.overwriteWorkflow(item.path);
                 break;
             case 'delete':
                 await this.deleteItem(item);

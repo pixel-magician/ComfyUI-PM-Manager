@@ -44,7 +44,7 @@ def get_user_id_from_request(request):
 
 def get_pm_workflows_dir(user_id="default"):
     user_dir = folder_paths.get_user_directory()
-    user_workflow_dir = os.path.join(user_dir, user_id, "workflows")
+    user_workflow_dir = os.path.join(user_dir, user_id, "pm_workflows")
     os.makedirs(user_workflow_dir, exist_ok=True)
     return user_workflow_dir
 

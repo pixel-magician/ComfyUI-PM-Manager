@@ -100,5 +100,20 @@
   "simplifiedChinese": "Simplified Chinese",
   "language": "Language",
   "source": "Source",
-  "enterSourceUrl": "Enter source URL..."
+  "enterSourceUrl": "Enter source URL...",
+  "saveCurrentWorkflow": "Save Current",
+  "saveCurrentWorkflowTitle": "Save Current Workflow",
+  "enterWorkflowName": "Please enter workflow name:",
+  "enterWorkflowNameWithPath": "Please enter workflow name (supports relative path like \"folder/workflow\"):",
+  "noWorkflowToSave": "No workflow to save",
+  "workflowSaved": "Workflow saved successfully",
+  "saveWorkflowFailed": "Failed to save workflow",
+  "overwriteWorkflow": "Overwrite with current",
+  "overwriteWithCurrent": "Overwrite with Current",
+  "confirmOverwrite": "Confirm Overwrite",
+  "confirmOverwriteWorkflow": "Are you sure you want to overwrite",
+  "thisActionCannotBeUndone": "This action cannot be undone.",
+  "overwrite": "Overwrite",
+  "workflowOverwritten": "Workflow overwritten successfully",
+  "overwriteWorkflowFailed": "Failed to overwrite workflow"
 }

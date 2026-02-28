@@ -211,7 +211,7 @@ async def get_pm_model_preview(request):
             if file.endswith(lora_extensions):
                 name_without_ext = os.path.splitext(file)[0]
                 # Check if model_path matches just the filename or the full relative path
-                if (name_without_ext == model_path or 
+                if (name_without_ext == model_path or
                     file == model_path or
                     name_without_ext == model_name_only or
                     file == model_name_only):

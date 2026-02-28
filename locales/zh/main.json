@@ -100,5 +100,20 @@
   "simplifiedChinese": "简体中文",
   "language": "语言",
   "source": "来源",
-  "enterSourceUrl": "输入来源 URL..."
+  "enterSourceUrl": "输入来源 URL...",
+  "saveCurrentWorkflow": "保存当前",
+  "saveCurrentWorkflowTitle": "保存当前工作流",
+  "enterWorkflowName": "请输入工作流名称:",
+  "enterWorkflowNameWithPath": "请输入工作流名称 (支持相对路径如 \"folder/workflow\"):",
+  "noWorkflowToSave": "没有可保存的工作流",
+  "workflowSaved": "工作流保存成功",
+  "saveWorkflowFailed": "保存工作流失败",
+  "overwriteWorkflow": "用当前工作流覆盖",
+  "overwriteWithCurrent": "用当前覆盖",
+  "confirmOverwrite": "确认覆盖",
+  "confirmOverwriteWorkflow": "确定要覆盖",
+  "thisActionCannotBeUndone": "此操作不可撤销。",
+  "overwrite": "覆盖",
+  "workflowOverwritten": "工作流覆盖成功",
+  "overwriteWorkflowFailed": "覆盖工作流失败"
 }
