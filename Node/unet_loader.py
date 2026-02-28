@@ -1,5 +1,6 @@
 import torch
 import comfy.sd
+import folder_paths
 from comfy_api.latest import IO
 from ..utils.model_paths import get_unet_path
 
@@ -17,6 +18,7 @@ class PMUNetLoader(IO.ComfyNode):
             ],
             outputs=[
                 IO.Model.Output("model"),
+                IO.AnyType.Output("model_name"),
             ],
             accept_all_inputs=True,
         )
@@ -60,4 +62,21 @@ class PMUNetLoader(IO.ComfyNode):
 
         model = comfy.sd.load_diffusion_model(unet_path, model_options=model_options)
 
-        return IO.NodeOutput(model)
+        # Get the relative filename from the full path for output
+        # Convert to the format expected by other nodes (with extension)
+        import os
+        # Get the relative path from models dir
+        models_dir = folder_paths.models_dir
+        if unet_path.startswith(models_dir):
+            relative_path = unet_path[len(models_dir):].lstrip(os.sep)
+            # Remove the 'diffusion_models\' or 'unet\' prefix
+            if relative_path.startswith('diffusion_models' + os.sep):
+                output_name = relative_path[len('diffusion_models' + os.sep):]
+            elif relative_path.startswith('unet' + os.sep):
+                output_name = relative_path[len('unet' + os.sep):]
+            else:
+                output_name = os.path.basename(unet_path)
+        else:
+            output_name = os.path.basename(unet_path)
+
+        return IO.NodeOutput(model, output_name)

@@ -1,5 +1,7 @@
+import os
 import comfy.sd
 import comfy.utils
+import folder_paths
 from comfy_api.latest import IO
 from ..utils.model_paths import get_vae_path
 
@@ -16,6 +18,7 @@ class PMVAELoader(IO.ComfyNode):
             ],
             outputs=[
                 IO.Vae.Output("vae"),
+                IO.AnyType.Output("model_name"),
             ],
             accept_all_inputs=True,
         )
@@ -52,4 +55,15 @@ class PMVAELoader(IO.ComfyNode):
         sd, metadata = comfy.utils.load_torch_file(vae_path, return_metadata=True)
         vae = comfy.sd.VAE(sd=sd, metadata=metadata)
 
-        return IO.NodeOutput(vae)
+        # Get the relative filename from the full path for output
+        models_dir = folder_paths.models_dir
+        if vae_path.startswith(models_dir):
+            relative_path = vae_path[len(models_dir):].lstrip(os.sep)
+            if relative_path.startswith('vae' + os.sep):
+                output_name = relative_path[len('vae' + os.sep):]
+            else:
+                output_name = os.path.basename(vae_path)
+        else:
+            output_name = os.path.basename(vae_path)
+
+        return IO.NodeOutput(vae, output_name)

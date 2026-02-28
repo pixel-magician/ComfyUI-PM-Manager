@@ -107,6 +107,9 @@
     "outputs": {
       "0": {
         "name": "clip"
+      },
+      "1": {
+        "name": "model_name"
       }
     }
   },
@@ -117,6 +120,9 @@
     "outputs": {
       "0": {
         "name": "vae"
+      },
+      "1": {
+        "name": "model_name"
       }
     }
   },
@@ -131,6 +137,9 @@
     "outputs": {
       "0": {
         "name": "model"
+      },
+      "1": {
+        "name": "model_name"
       }
     }
   }

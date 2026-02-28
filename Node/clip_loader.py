@@ -1,4 +1,6 @@
+import os
 import comfy.sd
+import folder_paths
 from comfy_api.latest import IO
 from ..utils.model_paths import get_clip_path
 
@@ -15,6 +17,7 @@ class PMClipLoader(IO.ComfyNode):
             ],
             outputs=[
                 IO.Clip.Output("clip"),
+                IO.AnyType.Output("model_name"),
             ],
             accept_all_inputs=True,
         )
@@ -49,4 +52,17 @@ class PMClipLoader(IO.ComfyNode):
 
         clip = comfy.sd.load_clip([clip_path])
 
-        return IO.NodeOutput(clip)
+        # Get the relative filename from the full path for output
+        models_dir = folder_paths.models_dir
+        if clip_path.startswith(models_dir):
+            relative_path = clip_path[len(models_dir):].lstrip(os.sep)
+            if relative_path.startswith('text_encoders' + os.sep):
+                output_name = relative_path[len('text_encoders' + os.sep):]
+            elif relative_path.startswith('clip' + os.sep):
+                output_name = relative_path[len('clip' + os.sep):]
+            else:
+                output_name = os.path.basename(clip_path)
+        else:
+            output_name = os.path.basename(clip_path)
+
+        return IO.NodeOutput(clip, output_name)
