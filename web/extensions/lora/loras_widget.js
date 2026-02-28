@@ -653,6 +653,9 @@ async function openLoraDetails(loraName) {
       if (dialog) {
         let foundItem = null;
 
+        // Extract the filename without path for comparison
+        const loraNameWithoutPath = loraName.split('/').pop();
+
         try {
           const searchInPath = async (path = "") => {
             const response = await fetchWithUser(`/pm_model/list?path=${encodeURIComponent(path)}`);
@@ -661,7 +664,12 @@ async function openLoraDetails(loraName) {
             for (const item of (data.items || [])) {
               if (item.type === 'model') {
                 const itemName = item.name.replace(/\.[^/.]+$/, '');
-                if (itemName === loraName || item.name === loraName) {
+                // Match by full path (without extension), filename (without extension), or full filename
+                const itemPathWithoutExt = item.path.replace(/\.[^/.]+$/, '');
+                if (itemName === loraName ||
+                    item.name === loraName ||
+                    itemName === loraNameWithoutPath ||
+                    itemPathWithoutExt === loraName) {
                   foundItem = item;
                   return true;
                 }

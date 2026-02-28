@@ -29,8 +29,9 @@ def scan_model_directory(base_dir, relative_path=""):
 
     for entry in os.listdir(current_dir):
         entry_path = os.path.join(current_dir, entry)
+        # Use forward slashes for cross-platform compatibility
         entry_relative_path = (
-            os.path.join(relative_path, entry) if relative_path else entry
+            relative_path.replace('\\', '/') + '/' + entry if relative_path else entry
         )
 
         if os.path.isdir(entry_path):

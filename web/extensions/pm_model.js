@@ -494,7 +494,8 @@ class PMModelDialog {
                             active: true,
                             expanded: false,
                             locked: false,
-                            selected: true
+                            selected: true,
+                            title: item.title || ''
                         });
                         this.targetNode.unetsWidget.value = updatedValue;
                     } else {
@@ -526,7 +527,8 @@ class PMModelDialog {
                             expanded: false,
                             locked: false,
                             strength: 1.0,
-                            clipStrength: 1.0
+                            clipStrength: 1.0,
+                            title: item.title || ''
                         });
                         this.targetNode.lorasWidget.value = currentValue;
                     }
@@ -555,7 +557,8 @@ class PMModelDialog {
                             active: true,
                             expanded: false,
                             locked: false,
-                            selected: true
+                            selected: true,
+                            title: item.title || ''
                         });
                         this.targetNode.vaesWidget.value = updatedValue;
                     } else {
@@ -590,7 +593,8 @@ class PMModelDialog {
                             active: true,
                             expanded: false,
                             locked: false,
-                            selected: true
+                            selected: true,
+                            title: item.title || ''
                         });
                         this.targetNode.clipsWidget.value = updatedValue;
                     } else {
@@ -602,7 +606,7 @@ class PMModelDialog {
                     }
                 }
             }
-            
+
             this.close();
             app.graph.setDirtyCanvas(true, true);
         }
@@ -980,6 +984,9 @@ class PMModelDialog {
 
         try {
             const response = await fetchWithUser(`/pm_model/info/${encodeURIComponent(item.path)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const info = await response.json();
 
             let html = '<div class="space-y-5">';

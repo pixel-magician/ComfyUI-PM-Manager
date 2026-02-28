@@ -9,7 +9,8 @@ export function parseValue(value) {
   }
   return value.map(item => ({
     name: item.name || '',
-    selected: item.selected || false
+    selected: item.selected || false,
+    title: item.title || ''
   }));
 }
 
@@ -19,7 +20,8 @@ export function formatValue(data) {
   }
   return data.map(item => ({
     name: item.name,
-    selected: item.selected
+    selected: item.selected,
+    title: item.title || ''
   }));
 }
 

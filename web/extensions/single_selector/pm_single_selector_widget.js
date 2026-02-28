@@ -80,9 +80,11 @@ export function createSingleSelectorWidget(config) {
       let totalVisibleEntries = modelsData.length;
 
       modelsData.forEach((modelData, index) => {
-        const { name: modelName, selected } = modelData;
+        const { name: modelName, selected, title } = modelData;
         // Extract just the filename (without path) for display
-        const displayName = modelName.split('/').pop();
+        // Priority: title > filename
+        const fileName = modelName.split('/').pop();
+        const displayName = title || fileName;
 
         const modelEl = document.createElement("div");
         modelEl.className = entryClass;
@@ -449,6 +451,9 @@ export function createOpenDetailsFn(searchPathPrefix) {
         if (dialog) {
           let foundItem = null;
 
+          // Extract the filename without path and extension for comparison
+          const modelNameWithoutPath = modelName.split('/').pop();
+
           try {
             const searchInPath = async (path = "") => {
               const response = await fetchWithUser(`/pm_model/list?path=${encodeURIComponent(path)}`);
@@ -457,7 +462,12 @@ export function createOpenDetailsFn(searchPathPrefix) {
               for (const item of (data.items || [])) {
                 if (item.type === 'model') {
                   const itemName = item.name.replace(/\.[^/.]+$/, '');
-                  if (itemName === modelName || item.name === modelName) {
+                  // Match by full path (without extension), filename (without extension), or full filename
+                  const itemPathWithoutExt = item.path.replace(/\.[^/.]+$/, '');
+                  if (itemName === modelName ||
+                      item.name === modelName ||
+                      itemName === modelNameWithoutPath ||
+                      itemPathWithoutExt === modelName) {
                     foundItem = item;
                     return true;
                   }
