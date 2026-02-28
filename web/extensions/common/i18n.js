@@ -98,6 +98,8 @@ async function loadTranslations(targetLocale = null) {
 
             // Extract PM Manager translations
             if (data && data[locale]) {
+                // The i18n API returns nested structure: { nodeDefs: {...}, commands: {...} }
+                // We need to extract nodeDefs for node translation lookups
                 translations = data[locale];
                 console.log('[PM Manager] Loaded translations for locale:', locale, 'Keys:', Object.keys(translations).slice(0, 20));
             } else {
@@ -198,9 +200,12 @@ export async function tAsync(key, defaultValue = '') {
 
 // Get node definition translation
 export function getNodeTranslation(nodeId, field = 'display_name') {
-    // Node definitions are also flattened in ComfyUI
-    if (translations[nodeId]) {
-        const nodeDef = translations[nodeId];
+    // The i18n API returns nested structure: { nodeDefs: {...}, commands: {...} }
+    // Node definitions are under translations.nodeDefs
+    const nodeDefs = translations.nodeDefs || translations;
+
+    if (nodeDefs && nodeDefs[nodeId]) {
+        const nodeDef = nodeDefs[nodeId];
 
         if (field === 'display_name') {
             return nodeDef.display_name || nodeId;

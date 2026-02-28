@@ -1,6 +1,6 @@
 import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
-import { t, initPromise, onLocaleChange } from "../common/i18n.js";
+import { t, initPromise, onLocaleChange, getNodeTranslation } from "../common/i18n.js";
 
 let pmInputManagerCache = null;
 
@@ -342,10 +342,23 @@ function mouseAnnotated(event, [x, y], node) {
 app.registerExtension({
   name: "ComfyUI.PMVideoLoader",
   async getCustomWidgets() {
+    // 辅助函数：更新widget标签
+    const updateWidgetLabel = (widget, inputName) => {
+      const translatedLabel = getNodeTranslation('PMLoadVideo', `inputs.${inputName}`);
+      // 只要获取到的翻译有效（不是节点ID），就更新标签
+      // 英文模式下翻译可能和输入名相同，这也是正确的
+      if (translatedLabel && translatedLabel !== 'PMLoadVideo') {
+        widget.label = translatedLabel;
+        return true;
+      }
+      return false;
+    };
+
     return {
       PMFLOAT(node, inputName, inputData) {
         let w = {
           name: inputName,
+          label: inputName,
           type: "PM.ANNOTATED",
           value: inputData[1]?.default ?? 0,
           draw: drawAnnotated,
@@ -376,11 +389,27 @@ app.registerExtension({
           node.widgets = [];
         }
         node.widgets.push(w);
+
+        // 等待翻译加载完成后更新标签
+        initPromise.then(() => {
+          if (updateWidgetLabel(w, inputName)) {
+            app.canvas?.setDirtyCanvas(true, true);
+          }
+        });
+
+        // 监听语言变化
+        onLocaleChange(() => {
+          if (updateWidgetLabel(w, inputName)) {
+            app.canvas?.setDirtyCanvas(true, true);
+          }
+        });
+
         return w;
       },
       PMINT(node, inputName, inputData) {
         let w = {
           name: inputName,
+          label: inputName,
           type: "PM.ANNOTATED",
           value: inputData[1]?.default ?? 0,
           draw: drawAnnotated,
@@ -412,6 +441,21 @@ app.registerExtension({
           node.widgets = [];
         }
         node.widgets.push(w);
+
+        // 等待翻译加载完成后更新标签
+        initPromise.then(() => {
+          if (updateWidgetLabel(w, inputName)) {
+            app.canvas?.setDirtyCanvas(true, true);
+          }
+        });
+
+        // 监听语言变化
+        onLocaleChange(() => {
+          if (updateWidgetLabel(w, inputName)) {
+            app.canvas?.setDirtyCanvas(true, true);
+          }
+        });
+
         return w;
       }
     };

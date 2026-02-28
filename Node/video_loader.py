@@ -409,12 +409,12 @@ class PMLoadVideo(IO.ComfyNode):
             ],
             inputs=[
                 IO.Combo.Input("video", options=sorted(files)),
-                IO.Float.Input("force_rate", default=0, min=0, max=60, step=1),
-                IO.Int.Input("custom_width", default=0, min=0, max=DIMMAX),
-                IO.Int.Input("custom_height", default=0, min=0, max=DIMMAX),
-                IO.Int.Input("frame_load_cap", default=0, min=0, max=BIGMAX, step=1),
-                IO.Int.Input("skip_first_frames", default=0, min=0, max=BIGMAX, step=1),
-                IO.Int.Input("select_every_nth", default=1, min=1, max=BIGMAX, step=1),
+                IO.Float.Input("force_rate", default=0, min=0, max=60, step=1, extra_dict={"reset": 0}),
+                IO.Int.Input("custom_width", default=0, min=0, max=DIMMAX, extra_dict={"reset": 0}),
+                IO.Int.Input("custom_height", default=0, min=0, max=DIMMAX, extra_dict={"reset": 0}),
+                IO.Int.Input("frame_load_cap", default=0, min=0, max=BIGMAX, step=1, extra_dict={"reset": 0}),
+                IO.Int.Input("skip_first_frames", default=0, min=0, max=BIGMAX, step=1, extra_dict={"reset": 0}),
+                IO.Int.Input("select_every_nth", default=1, min=1, max=BIGMAX, step=1, extra_dict={"reset": 1}),
             ],
             outputs=[
                 IO.Image.Output("images"),
