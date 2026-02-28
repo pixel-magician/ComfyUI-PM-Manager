@@ -98,5 +98,7 @@
   "autoFollowComfyUI": "Auto (Follow ComfyUI)",
   "english": "English",
   "simplifiedChinese": "Simplified Chinese",
-  "language": "Language"
+  "language": "Language",
+  "source": "Source",
+  "enterSourceUrl": "Enter source URL..."
 }

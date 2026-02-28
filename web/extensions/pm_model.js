@@ -1052,6 +1052,35 @@ class PMModelDialog {
                             </div>
                         </div>
                     </div>
+                    <div class="info-item rounded-lg p-3">
+                        <p class="info-label mb-2">${t('source', 'Source')}</p>
+                        <div class="flex items-center justify-between gap-2" data-field="url">
+                            <div class="flex items-center gap-2 flex-1 overflow-hidden">
+                                ${info.metadata?.url
+                                    ? `<a href="${info.metadata.url}" target="_blank" class="pm-field-display text-purple-400 hover:text-purple-300 underline font-medium truncate">${info.metadata.url}</a>`
+                                    : `<span class="pm-field-display text-[var(--fg)] font-medium truncate">-</span>`
+                                }
+                            </div>
+                            <button class="pm-edit-btn opacity-60 hover:opacity-100 flex-shrink-0 bg-transparent border-none outline-none cursor-pointer" title="${t('edit', 'Edit')}">
+                                <svg class="w-5 h-5 text-[var(--fg-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                            <div class="pm-field-edit hidden flex-1 flex gap-1 min-w-0">
+                                <input type="url" class="pm-field-input flex-1 px-2 py-1.5 rounded bg-[var(--comfy-input-bg)] border border-[var(--border-color)] text-[var(--fg)] focus:outline-none focus:border-purple-500 text-sm" data-original="${info.metadata?.url || ''}" value="${info.metadata?.url || ''}" placeholder="${t('enterSourceUrl', 'Enter source URL...')}">
+                                <button class="pm-save-btn px-2 py-1.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity flex-shrink-0" title="${t('save', 'Save')}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                <button class="pm-cancel-btn px-2 py-1.5 rounded hover:bg-[var(--comfy-input-bg)] text-[var(--fg-light)] transition-colors flex-shrink-0" title="${t('cancel', 'Cancel')}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="info-item rounded-lg p-3">
                             <p class="info-label mb-2">${t('steps', 'Steps')}</p>
@@ -1182,7 +1211,7 @@ class PMModelDialog {
                     saveBtn.addEventListener('click', async () => {
                         const newValue = input.value.trim();
                         const newMetadata = { ...info.metadata };
-                        
+
                         if (field === 'title') {
                             newMetadata.title = newValue;
                         } else if (field === 'steps') {
@@ -1197,18 +1226,29 @@ class PMModelDialog {
                             } else if (newMetadata.cfg !== undefined) {
                                 delete newMetadata.cfg;
                             }
+                        } else if (field === 'url') {
+                            if (newValue) {
+                                newMetadata.url = newValue;
+                            } else if (newMetadata.url !== undefined) {
+                                delete newMetadata.url;
+                            }
                         }
                         
                         const result = await self.saveMetadata(item.path, newMetadata);
                         if (result && result.success) {
                             await self.loadItems(self.currentPath);
-                            
-                            input.dataset.original = newValue;
-                            fieldDisplay.textContent = newValue || '-';
-                            fieldEdit.classList.add('hidden');
-                            fieldEdit.classList.remove('flex');
-                            editBtn.classList.remove('hidden');
-                            fieldDisplay.parentElement.classList.remove('hidden');
+
+                            // For URL field, re-render the entire dialog to handle tag switch between <a> and <span>
+                            if (field === 'url') {
+                                self.showInfoDialog(item);
+                            } else {
+                                input.dataset.original = newValue;
+                                fieldDisplay.textContent = newValue || '-';
+                                fieldEdit.classList.add('hidden');
+                                fieldEdit.classList.remove('flex');
+                                editBtn.classList.remove('hidden');
+                                fieldDisplay.parentElement.classList.remove('hidden');
+                            }
                         }
                     });
                     
