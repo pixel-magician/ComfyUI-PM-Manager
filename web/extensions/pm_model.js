@@ -475,19 +475,22 @@ class PMModelDialog {
                 if (unetNameWidget) {
                     unetNameWidget.value = filename;
                 }
-                
+
                 if (this.targetNode.unetsWidget) {
                     const currentValue = this.targetNode.unetsWidget.value || [];
-                    const modelName = item.name.replace(/\.[^/.]+$/, '');
-                    const existingIndex = currentValue.findIndex(u => u.name === modelName);
-                    
+                    // Use relative path without extension, remove 'diffusion_models/' or 'unet/' prefix
+                    // Normalize path separators to forward slashes
+                    const normalizedPath = item.path.replace(/\\/g, '/');
+                    const modelPath = normalizedPath.replace(/\.[^/.]+$/, '').replace(/^(diffusion_models|unet)\//, '');
+                    const existingIndex = currentValue.findIndex(u => u.name === modelPath);
+
                     if (existingIndex === -1) {
                         const updatedValue = currentValue.map(u => ({
                             ...u,
                             selected: false
                         }));
                         updatedValue.push({
-                            name: modelName,
+                            name: modelPath,
                             active: true,
                             expanded: false,
                             locked: false,
@@ -507,15 +510,18 @@ class PMModelDialog {
                 if (loraNameWidget) {
                     loraNameWidget.value = filename;
                 }
-                
+
                 if (this.targetNode.lorasWidget) {
                     const currentValue = this.targetNode.lorasWidget.value || [];
-                    const modelName = item.name.replace(/\.[^/.]+$/, '');
-                    const existingIndex = currentValue.findIndex(l => l.name === modelName);
-                    
+                    // Use relative path without extension, remove 'loras/' prefix
+                    // Normalize path separators to forward slashes
+                    const normalizedPath = item.path.replace(/\\/g, '/');
+                    const modelPath = normalizedPath.replace(/\.[^/.]+$/, '').replace(/^loras\//, '');
+                    const existingIndex = currentValue.findIndex(l => l.name === modelPath);
+
                     if (existingIndex === -1) {
                         currentValue.push({
-                            name: modelName,
+                            name: modelPath,
                             active: true,
                             expanded: false,
                             locked: false,
@@ -530,19 +536,22 @@ class PMModelDialog {
                 if (vaeNameWidget) {
                     vaeNameWidget.value = filename;
                 }
-                
+
                 if (this.targetNode.vaesWidget) {
                     const currentValue = this.targetNode.vaesWidget.value || [];
-                    const modelName = item.name.replace(/\.[^/.]+$/, '');
-                    const existingIndex = currentValue.findIndex(v => v.name === modelName);
-                    
+                    // Use relative path without extension, remove 'vae/' prefix
+                    // Normalize path separators to forward slashes
+                    const normalizedPath = item.path.replace(/\\/g, '/');
+                    const modelPath = normalizedPath.replace(/\.[^/.]+$/, '').replace(/^vae\//, '');
+                    const existingIndex = currentValue.findIndex(v => v.name === modelPath);
+
                     if (existingIndex === -1) {
                         const updatedValue = currentValue.map(v => ({
                             ...v,
                             selected: false
                         }));
                         updatedValue.push({
-                            name: modelName,
+                            name: modelPath,
                             active: true,
                             expanded: false,
                             locked: false,
@@ -562,19 +571,22 @@ class PMModelDialog {
                 if (clipNameWidget) {
                     clipNameWidget.value = filename;
                 }
-                
+
                 if (this.targetNode.clipsWidget) {
                     const currentValue = this.targetNode.clipsWidget.value || [];
-                    const modelName = item.name.replace(/\.[^/.]+$/, '');
-                    const existingIndex = currentValue.findIndex(c => c.name === modelName);
-                    
+                    // Use relative path without extension, remove 'clip/' prefix
+                    // Normalize path separators to forward slashes
+                    const normalizedPath = item.path.replace(/\\/g, '/');
+                    const modelPath = normalizedPath.replace(/\.[^/.]+$/, '').replace(/^clip\//, '');
+                    const existingIndex = currentValue.findIndex(c => c.name === modelPath);
+
                     if (existingIndex === -1) {
                         const updatedValue = currentValue.map(c => ({
                             ...c,
                             selected: false
                         }));
                         updatedValue.push({
-                            name: modelName,
+                            name: modelPath,
                             active: true,
                             expanded: false,
                             locked: false,

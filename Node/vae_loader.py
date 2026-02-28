@@ -1,4 +1,5 @@
 import comfy.sd
+import comfy.utils
 from comfy_api.latest import IO
 from ..utils.model_paths import get_vae_path
 
@@ -16,12 +17,13 @@ class PMVAELoader(IO.ComfyNode):
             outputs=[
                 IO.Vae.Output("vae"),
             ],
+            accept_all_inputs=True,
         )
 
     @classmethod
     def execute(cls, **kwargs) -> IO.NodeOutput:
-        # Get vaes from hidden inputs
-        vaes = kwargs.get('vaes')
+        # Get vaes from hidden inputs (widget name is "vaesWidget")
+        vaes = kwargs.get('vaesWidget') or kwargs.get('vaes')
         selected_vae = None
         if vaes:
             if isinstance(vaes, dict) and '__value__' in vaes:
@@ -46,6 +48,8 @@ class PMVAELoader(IO.ComfyNode):
         if not vae_path:
             raise ValueError(f"VAE model not found: {selected_vae}")
 
-        vae = comfy.sd.load_vae(vae_path)
+        # Load VAE using comfy.utils.load_torch_file and comfy.sd.VAE
+        sd, metadata = comfy.utils.load_torch_file(vae_path, return_metadata=True)
+        vae = comfy.sd.VAE(sd=sd, metadata=metadata)
 
         return IO.NodeOutput(vae)

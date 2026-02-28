@@ -81,6 +81,8 @@ export function createSingleSelectorWidget(config) {
 
       modelsData.forEach((modelData, index) => {
         const { name: modelName, selected } = modelData;
+        // Extract just the filename (without path) for display
+        const displayName = modelName.split('/').pop();
 
         const modelEl = document.createElement("div");
         modelEl.className = entryClass;
@@ -301,7 +303,7 @@ export function createSingleSelectorWidget(config) {
         });
 
         const nameEl = document.createElement("div");
-        nameEl.textContent = modelName;
+        nameEl.textContent = displayName;
         nameEl.className = nameClass;
 
         let previewTimer = null;

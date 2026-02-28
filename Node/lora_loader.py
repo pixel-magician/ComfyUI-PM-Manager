@@ -21,14 +21,15 @@ class PMLoraLoader(IO.ComfyNode):
                 IO.Clip.Output("clip"),
                 IO.LoraModel.Output("lora_stack"),
             ],
+            accept_all_inputs=True,
         )
 
     @classmethod
     def execute(cls, model, clip, lora_stack=None, **kwargs) -> IO.NodeOutput:
         output_stack = list(lora_stack) if lora_stack else []
 
-        # Get loras from hidden inputs
-        loras = kwargs.get('loras')
+        # Get loras from hidden inputs (widget name is "lorasWidget")
+        loras = kwargs.get('lorasWidget') or kwargs.get('loras')
         if loras:
             if isinstance(loras, dict) and '__value__' in loras:
                 loras_list = loras['__value__']

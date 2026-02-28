@@ -16,12 +16,13 @@ class PMClipLoader(IO.ComfyNode):
             outputs=[
                 IO.Clip.Output("clip"),
             ],
+            accept_all_inputs=True,
         )
 
     @classmethod
     def execute(cls, **kwargs) -> IO.NodeOutput:
-        # Get clips from hidden inputs
-        clips = kwargs.get('clips')
+        # Get clips from hidden inputs (widget name is "clipsWidget")
+        clips = kwargs.get('clipsWidget') or kwargs.get('clips')
         selected_clip = None
         if clips:
             if isinstance(clips, dict) and '__value__' in clips:
@@ -46,6 +47,6 @@ class PMClipLoader(IO.ComfyNode):
         if not clip_path:
             raise ValueError(f"CLIP model not found: {selected_clip}")
 
-        clip = comfy.sd.load_clip(clip_path)
+        clip = comfy.sd.load_clip([clip_path])
 
         return IO.NodeOutput(clip)

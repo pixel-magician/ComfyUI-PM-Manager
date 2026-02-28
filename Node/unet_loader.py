@@ -18,6 +18,7 @@ class PMUNetLoader(IO.ComfyNode):
             outputs=[
                 IO.Model.Output("model"),
             ],
+            accept_all_inputs=True,
         )
 
     @classmethod
@@ -31,8 +32,8 @@ class PMUNetLoader(IO.ComfyNode):
         elif weight_dtype == "fp8_e5m2":
             model_options["dtype"] = torch.float8_e5m2
 
-        # Get unets from hidden inputs
-        unets = kwargs.get('unets')
+        # Get unets from hidden inputs (widget name is "unetsWidget")
+        unets = kwargs.get('unetsWidget') or kwargs.get('unets')
         selected_unet = None
         if unets:
             if isinstance(unets, dict) and '__value__' in unets:
