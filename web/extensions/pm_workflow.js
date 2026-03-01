@@ -518,6 +518,80 @@ class PMWorkflowDialog {
         }
     }
 
+    async saveWorkflowToCurrentPath() {
+        try {
+            let workflowData = null;
+            let workflowName = '';
+
+            if (app.graph) {
+                workflowData = app.graph.serialize();
+            }
+
+            if (!workflowData) {
+                alert(t('noWorkflowToSave', 'No workflow to save'));
+                return;
+            }
+
+            // Get current workflow name from active workflow or graph
+            if (app.workflowManager && app.workflowManager.activeWorkflow) {
+                const activeWorkflow = app.workflowManager.activeWorkflow;
+                workflowName = activeWorkflow.name || activeWorkflow.path || '';
+            }
+
+            // If no name from active workflow, try to get from graph extra data
+            if (!workflowName && app.graph && app.graph.extra && app.graph.extra.workflow_name) {
+                workflowName = app.graph.extra.workflow_name;
+            }
+
+            // Default name if still empty
+            if (!workflowName) {
+                workflowName = 'workflow';
+            }
+
+            // Remove .json extension if present
+            workflowName = workflowName.replace(/\.json$/i, '');
+
+            // Show dialog to confirm/modify name
+            this.showPromptDialog(
+                t('saveHere', 'Save Here'),
+                t('enterWorkflowName', 'Please enter workflow name:'),
+                workflowName,
+                async (name) => {
+                    if (!name || name.trim() === '') return;
+
+                    const fileName = name.trim();
+                    const targetDir = this.currentPath;
+
+                    try {
+                        const response = await fetchWithUser('/pm_workflow/save', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: fileName,
+                                workflow: workflowData,
+                                path: targetDir
+                            })
+                        });
+
+                        if (response.ok) {
+                            await this.loadItems(this.currentPath);
+                            alert(t('workflowSaved', 'Workflow saved successfully'));
+                        } else {
+                            const errorText = await response.text();
+                            alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + errorText);
+                        }
+                    } catch (error) {
+                        console.error('Save workflow error:', error);
+                        alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + error.message);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Save workflow to current path error:', error);
+            alert(t('saveWorkflowFailed', 'Failed to save workflow') + ': ' + error.message);
+        }
+    }
+
     async show() {
         this.setupContextMenuEvents();
         this.updateDialogTranslations();
@@ -588,6 +662,13 @@ class PMWorkflowDialog {
             `;
         } else {
             this.contextMenu.innerHTML = `
+                <div class="pm-context-menu-item" data-action="save-here">
+                    <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    ${t('saveHere', 'Save Here')}
+                </div>
+                <div class="pm-context-menu-divider"></div>
                 <div class="pm-context-menu-item" data-action="new-folder">
                     <svg class="pm-context-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
@@ -795,6 +876,9 @@ class PMWorkflowDialog {
                 break;
             case 'new-workflow':
                 this.createNewWorkflow();
+                break;
+            case 'save-here':
+                await this.saveWorkflowToCurrentPath();
                 break;
         }
     }

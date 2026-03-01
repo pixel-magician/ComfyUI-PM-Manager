@@ -103,6 +103,7 @@
   "enterSourceUrl": "输入来源 URL...",
   "saveCurrentWorkflow": "保存当前",
   "saveCurrentWorkflowTitle": "保存当前工作流",
+  "saveHere": "保存至此",
   "enterWorkflowName": "请输入工作流名称:",
   "enterWorkflowNameWithPath": "请输入工作流名称 (支持相对路径如 \"folder/workflow\"):",
   "noWorkflowToSave": "没有可保存的工作流",
