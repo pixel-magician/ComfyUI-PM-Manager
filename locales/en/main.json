@@ -103,6 +103,7 @@
   "enterSourceUrl": "Enter source URL...",
   "saveCurrentWorkflow": "Save Current",
   "saveCurrentWorkflowTitle": "Save Current Workflow",
+  "selectPreviewType": "Select Preview Type",
   "saveHere": "Save Here",
   "enterWorkflowName": "Please enter workflow name:",
   "enterWorkflowNameWithPath": "Please enter workflow name (supports relative path like \"folder/workflow\"):",

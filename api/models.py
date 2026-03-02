@@ -27,6 +27,10 @@ def scan_model_directory(base_dir, relative_path=""):
     if not os.path.exists(current_dir):
         return items
 
+    # Supported preview extensions
+    image_extensions = (".png", ".jpg", ".jpeg", ".webp")
+    video_extensions = (".mp4", ".webm", ".avi", ".mov", ".mkv")
+
     for entry in os.listdir(current_dir):
         entry_path = os.path.join(current_dir, entry)
         # Use forward slashes for cross-platform compatibility
@@ -36,20 +40,55 @@ def scan_model_directory(base_dir, relative_path=""):
 
         if os.path.isdir(entry_path):
             if has_models_or_subfolders(entry_path):
-                folder_preview_path = os.path.join(current_dir, f"{entry}.png")
-                has_preview = os.path.exists(folder_preview_path)
+                # Check for image preview
+                folder_preview_path_png = os.path.join(current_dir, f"{entry}.png")
+                has_preview = os.path.exists(folder_preview_path_png)
+                preview_type = "image" if has_preview else None
+
+                # Check for video preview if no image preview
+                if not has_preview:
+                    for ext in video_extensions:
+                        folder_preview_path_video = os.path.join(current_dir, f"{entry}{ext}")
+                        if os.path.exists(folder_preview_path_video):
+                            has_preview = True
+                            preview_type = "video"
+                            break
+
                 items.append(
                     {
                         "type": "folder",
                         "name": entry,
                         "path": entry_relative_path,
                         "has_preview": has_preview,
+                        "preview_type": preview_type,
                     }
                 )
         elif entry.endswith((".safetensors", ".pt", ".pth", ".bin", ".ckpt")):
             model_name = os.path.splitext(entry)[0]
-            png_path = os.path.join(current_dir, f"{model_name}.png")
-            has_preview = os.path.exists(png_path)
+
+            # Check for image preview
+            has_preview = False
+            preview_type = None
+            preview_ext = None
+
+            for ext in image_extensions:
+                preview_path = os.path.join(current_dir, f"{model_name}{ext}")
+                if os.path.exists(preview_path):
+                    has_preview = True
+                    preview_type = "image"
+                    preview_ext = ext
+                    break
+
+            # Check for video preview if no image preview
+            if not has_preview:
+                for ext in video_extensions:
+                    preview_path = os.path.join(current_dir, f"{model_name}{ext}")
+                    if os.path.exists(preview_path):
+                        has_preview = True
+                        preview_type = "video"
+                        preview_ext = ext
+                        break
+
             metadata = load_pm_metadata(current_dir, model_name)
             items.append(
                 {
@@ -58,6 +97,8 @@ def scan_model_directory(base_dir, relative_path=""):
                     "filename": entry,
                     "path": entry_relative_path,
                     "has_preview": has_preview,
+                    "preview_type": preview_type,
+                    "preview_ext": preview_ext,
                     "title": metadata.get("title", ""),
                     "metadata": metadata,
                 }
@@ -232,7 +273,14 @@ async def get_pm_model_preview(request):
         parent_dir = os.path.dirname(found_model)
         name_without_ext = os.path.splitext(os.path.basename(found_model))[0]
 
+        # Check for image preview first
         for ext in (".png", ".jpg", ".jpeg", ".webp"):
+            preview_path = os.path.join(parent_dir, f"{name_without_ext}{ext}")
+            if os.path.exists(preview_path):
+                return web.FileResponse(preview_path)
+
+        # Check for video preview
+        for ext in (".mp4", ".webm", ".avi", ".mov", ".mkv"):
             preview_path = os.path.join(parent_dir, f"{name_without_ext}{ext}")
             if os.path.exists(preview_path):
                 return web.FileResponse(preview_path)
@@ -246,11 +294,13 @@ async def replace_model_preview(request):
 
         item_path = data.get("path")
         image_file = data.get("image")
+        video_file = data.get("video")
 
-        if not item_path or not image_file:
-            return web.Response(status=400, text="Missing path or image")
+        if not item_path:
+            return web.Response(status=400, text="Missing path")
 
-        image_data = image_file.file.read()
+        if not image_file and not video_file:
+            return web.Response(status=400, text="Missing image or video file")
 
         item_path = urllib.parse.unquote(item_path)
         pm_models_dir = get_pm_models_dir()
@@ -260,21 +310,41 @@ async def replace_model_preview(request):
             return web.Response(status=404, text="Item not found")
 
         parent_dir = os.path.dirname(full_path)
-        preview_path = None
 
-        if os.path.isfile(full_path) and not full_path.endswith(".png"):
+        # Determine if this is an image or video upload
+        is_video = video_file is not None
+        file_obj = video_file if is_video else image_file
+        file_data = file_obj.file.read()
+        original_filename = file_obj.filename
+
+        # Get file extension from uploaded file
+        file_ext = os.path.splitext(original_filename)[1].lower()
+
+        if os.path.isfile(full_path) and not full_path.endswith((".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".avi", ".mov", ".mkv")):
             name_without_ext = os.path.splitext(os.path.basename(full_path))[0]
-            preview_path = os.path.join(parent_dir, f"{name_without_ext}.png")
+            preview_path = os.path.join(parent_dir, f"{name_without_ext}{file_ext}")
+
+            # Remove existing preview files (both image and video)
+            for ext in (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".avi", ".mov", ".mkv"):
+                existing_preview = os.path.join(parent_dir, f"{name_without_ext}{ext}")
+                if os.path.exists(existing_preview):
+                    os.remove(existing_preview)
         elif os.path.isdir(full_path):
             folder_name = os.path.basename(full_path)
-            preview_path = os.path.join(parent_dir, f"{folder_name}.png")
+            preview_path = os.path.join(parent_dir, f"{folder_name}{file_ext}")
+
+            # Remove existing preview files (both image and video)
+            for ext in (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".avi", ".mov", ".mkv"):
+                existing_preview = os.path.join(parent_dir, f"{folder_name}{ext}")
+                if os.path.exists(existing_preview):
+                    os.remove(existing_preview)
         else:
             return web.Response(status=400, text="Invalid item type")
 
         with open(preview_path, "wb") as f:
-            f.write(image_data)
+            f.write(file_data)
 
-        return web.json_response({"success": True})
+        return web.json_response({"success": True, "preview_type": "video" if is_video else "image"})
     except Exception as e:
         logger.error(f"Replace preview error: {e}")
         logger.error(traceback.format_exc())

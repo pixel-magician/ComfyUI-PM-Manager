@@ -266,7 +266,7 @@ class PMModelDialog {
 
     renderItems() {
         const listEl = this.dialog.querySelector('#pm-model-list');
-        
+
         if (this.items.length === 0) {
             listEl.innerHTML = `<div class="col-span-5 text-center py-8 text-[var(--fg-light)]">${t('noContent', 'No content')}</div>`;
         } else {
@@ -275,22 +275,27 @@ class PMModelDialog {
                 let iconColor = 'text-[var(--fg-light)]';
                 let iconSvg = '';
                 let previewUrl = '';
-                
+                const isVideoPreview = item.preview_type === 'video';
+
                 if (item.has_preview) {
                     const pathParts = item.path.split(/[/\\]/);
                     const filename = pathParts.pop();
                     let previewName;
                     if (isFolder) {
-                        previewName = filename + '.png';
+                        // For folders, check preview_ext or default to .png
+                        const previewExt = item.preview_ext || '.png';
+                        previewName = filename + previewExt;
                     } else {
                         const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-                        previewName = nameWithoutExt + '.png';
+                        // Use preview_ext if available, otherwise default to .png
+                        const previewExt = item.preview_ext || '.png';
+                        previewName = nameWithoutExt + previewExt;
                     }
                     pathParts.push(previewName);
-                    const pngPath = pathParts.join('/');
-                    previewUrl = `/pm_model/preview/${encodeURIComponent(pngPath)}?t=${Date.now()}`;
+                    const previewPath = pathParts.join('/');
+                    previewUrl = `/pm_model/preview/${encodeURIComponent(previewPath)}?t=${Date.now()}`;
                 }
-                
+
                 if (isFolder) {
                     iconColor = 'text-yellow-400';
                     iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>';
@@ -306,36 +311,59 @@ class PMModelDialog {
                 } else {
                     iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>';
                 }
-                
+
+                // Generate preview HTML based on type
+                let previewHtml = '';
+                if (isFolder && item.has_preview) {
+                    if (isVideoPreview) {
+                        previewHtml = `<div class="w-full h-full relative">
+                            <video src="${previewUrl}" class="w-full h-full object-cover" muted loop playsinline autoplay></video>
+                            <div class="absolute inset-0 bg-black/20"></div>
+                            <div class="absolute top-2 left-2">
+                                <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center" style="box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else {
+                        previewHtml = `<div class="w-full h-full relative">
+                            <img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/20"></div>
+                            <div class="absolute top-2 left-2">
+                                <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center" style="box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                } else if (isFolder) {
+                    previewHtml = `<div class="w-full h-full flex items-center justify-center">
+                        <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${iconSvg}
+                        </svg>
+                    </div>`;
+                } else if (item.has_preview) {
+                    if (isVideoPreview) {
+                        previewHtml = `<video src="${previewUrl}" class="w-full h-full object-cover" muted loop playsinline autoplay></video>`;
+                    } else {
+                        previewHtml = `<img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">`;
+                    }
+                } else {
+                    previewHtml = `<div class="w-full h-full bg-[var(--comfy-input-bg)] flex items-center justify-center">
+                        <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${iconSvg}
+                        </svg>
+                    </div>`;
+                }
+
                 return `
-                    <div class="card group relative bg-[var(--comfy-menu-bg)] rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1 flex flex-col" data-path="${item.path}" data-type="${item.type}" style="animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 0.05}s; opacity: 0; border: 1px solid rgba(255,255,255,0.2);">
+                    <div class="card group relative bg-[var(--comfy-menu-bg)] rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1 flex flex-col" data-path="${item.path}" data-type="${item.type}" data-preview-type="${item.preview_type || ''}" style="animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 0.05}s; opacity: 0; border: 1px solid rgba(255,255,255,0.2);">
                         <div class="aspect-square bg-[var(--comfy-input-bg)] flex items-center justify-center overflow-hidden flex-shrink-0 relative">
-                            ${isFolder && item.has_preview 
-                                ? `<div class="w-full h-full relative">
-                                    <img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">
-                                    <div class="absolute inset-0 bg-black/20"></div>
-                                    <div class="absolute top-2 left-2">
-                                        <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center" style="box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);">
-                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>`
-                                : isFolder 
-                                    ? `<div class="w-full h-full flex items-center justify-center">
-                                        <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            ${iconSvg}
-                                        </svg>
-                                    </div>`
-                                    : item.has_preview 
-                                        ? `<img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">`
-                                        : `<div class="w-full h-full bg-[var(--comfy-input-bg)] flex items-center justify-center">
-                                            <svg class="w-16 h-16 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                ${iconSvg}
-                                            </svg>
-                                        </div>`
-                            }
+                            ${previewHtml}
                             <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
                                 <button class="pm-model-info-btn w-7 h-7 rounded-lg bg-black/50 backdrop-blur-sm flex items-center justify-center border-0" title="${t('viewDetails', 'View Details')}">
                                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,7 +431,7 @@ class PMModelDialog {
                 });
             }
         });
-        
+
         listEl.addEventListener('contextmenu', (e) => {
             if (e.target === listEl || e.target.classList.contains('col-span-5')) {
                 e.preventDefault();
@@ -842,29 +870,45 @@ class PMModelDialog {
     async replacePreview(item) {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
-        
+        input.accept = 'image/*,video/*';
+
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            
+
+            // Auto-detect file type based on MIME type
+            const isVideo = file.type.startsWith('video/');
+
             const formData = new FormData();
             formData.append('path', item.path);
-            formData.append('image', file);
-            
+
+            if (isVideo) {
+                formData.append('video', file);
+            } else {
+                formData.append('image', file);
+            }
+
             try {
+                // Pause all video elements to release file locks before uploading
+                const videoElements = document.querySelectorAll('#pm-model-list video');
+                videoElements.forEach(video => {
+                    video.pause();
+                    video.src = '';
+                    video.load();
+                });
+
                 const headers = new Headers();
                 const comfyUser = getComfyUserHeader();
                 if (comfyUser) {
                     headers.set('comfy-user', comfyUser);
                 }
-                
+
                 const response = await fetch('/pm_model/replace_preview', {
                     method: 'POST',
                     headers,
                     body: formData
                 });
-                
+
                 if (response.ok) {
                     await this.loadItems(this.currentPath);
                 } else {
@@ -876,7 +920,7 @@ class PMModelDialog {
                 alert(t('replacePreviewFailed', 'Replace preview failed') + ': ' + error.message);
             }
         };
-        
+
         input.click();
     }
 
@@ -992,33 +1036,50 @@ class PMModelDialog {
             let html = '<div class="space-y-5">';
 
             let previewUrl = '';
+            const isVideoPreview = item.preview_type === 'video';
             if (item.has_preview) {
                 const pathParts = item.path.split(/[/\\]/);
                 const filename = pathParts.pop();
                 let previewName;
                 if (info.type === 'folder') {
-                    previewName = filename + '.png';
+                    const previewExt = item.preview_ext || '.png';
+                    previewName = filename + previewExt;
                 } else {
                     const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-                    previewName = nameWithoutExt + '.png';
+                    const previewExt = item.preview_ext || '.png';
+                    previewName = nameWithoutExt + previewExt;
                 }
                 pathParts.push(previewName);
-                const pngPath = pathParts.join('/');
-                previewUrl = `/pm_model/preview/${encodeURIComponent(pngPath)}?t=${Date.now()}`;
+                const previewPath = pathParts.join('/');
+                previewUrl = `/pm_model/preview/${encodeURIComponent(previewPath)}?t=${Date.now()}`;
             }
 
             if (previewUrl) {
-                html += `
-                    <div class="info-card">
-                        <div class="aspect-video bg-gradient-to-br from-purple-900/30 to-pink-900/30 relative overflow-hidden">
-                            <img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                            <div class="absolute bottom-4 left-4 right-4">
-                                <p class="text-white font-semibold text-sm opacity-90">${t('preview', 'Preview')}</p>
+                if (isVideoPreview) {
+                    html += `
+                        <div class="info-card">
+                            <div class="aspect-video bg-gradient-to-br from-purple-900/30 to-pink-900/30 relative overflow-hidden">
+                                <video src="${previewUrl}" class="w-full h-full object-cover" controls loop playsinline></video>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+                                <div class="absolute bottom-4 left-4 right-4 pointer-events-none">
+                                    <p class="text-white font-semibold text-sm opacity-90">${t('preview', 'Preview')}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    html += `
+                        <div class="info-card">
+                            <div class="aspect-video bg-gradient-to-br from-purple-900/30 to-pink-900/30 relative overflow-hidden">
+                                <img src="${previewUrl}" alt="${item.name}" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <p class="text-white font-semibold text-sm opacity-90">${t('preview', 'Preview')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
             html += '<div class="info-card">';
