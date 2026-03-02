@@ -117,5 +117,8 @@
   "thisActionCannotBeUndone": "This action cannot be undone.",
   "overwrite": "Overwrite",
   "workflowOverwritten": "Workflow overwritten successfully",
-  "overwriteWorkflowFailed": "Failed to overwrite workflow"
+  "overwriteWorkflowFailed": "Failed to overwrite workflow",
+  "nodeTimer": "Node Timer",
+  "showNodeExecutionTime": "Show Node Execution Time",
+  "showNodeExecutionTimeDesc": "Display execution time on nodes"
 }

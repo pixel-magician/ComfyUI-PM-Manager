@@ -28,6 +28,7 @@ async function waitForComfyApp() {
 
 // 存储设置定义，用于动态更新
 let settingsDefinition = null;
+let nodeTimerSettingDefinition = null;
 
 // 注册 PM Manager 设置
 export async function registerPMSettings() {
@@ -73,6 +74,19 @@ export async function registerPMSettings() {
         updateSettingsUI(app);
     });
 
+    // 创建节点计时器设置定义
+    nodeTimerSettingDefinition = {
+        id: 'PMManager.ShowNodeTimer',
+        name: t('showNodeExecutionTime', 'Show Node Execution Time'),
+        tooltip: t('showNodeExecutionTimeDesc', 'Display execution time on nodes'),
+        category: ['PM Manager', t('nodeTimer', 'Node Timer')],
+        type: 'boolean',
+        defaultValue: true
+    };
+
+    // 注册节点计时器设置
+    app.ui.settings.addSetting(nodeTimerSettingDefinition);
+
     console.log('[PM Manager] Settings registered');
 }
 
@@ -80,7 +94,7 @@ export async function registerPMSettings() {
 function updateSettingsUI(app) {
     if (!settingsDefinition) return;
 
-    // 更新设置定义
+    // 更新语言设置定义
     settingsDefinition.name = t('pmManagerLanguage', 'PM Manager Language');
     settingsDefinition.tooltip = t('pmManagerLanguageDesc', 'Select the display language for PM Manager plugin');
     settingsDefinition.category = ['PM Manager', t('language', 'Language')];
@@ -90,40 +104,87 @@ function updateSettingsUI(app) {
         { value: 'zh', text: t('simplifiedChinese', 'Simplified Chinese') }
     ];
 
+    // 更新节点计时器设置定义
+    if (nodeTimerSettingDefinition) {
+        nodeTimerSettingDefinition.name = t('showNodeExecutionTime', 'Show Node Execution Time');
+        nodeTimerSettingDefinition.tooltip = t('showNodeExecutionTimeDesc', 'Display execution time on nodes');
+        nodeTimerSettingDefinition.category = ['PM Manager', t('nodeTimer', 'Node Timer')];
+    }
+
     // 触发设置面板刷新（如果 ComfyUI 支持）
-    if (app.ui.settings.settingsLookup && app.ui.settings.settingsLookup['PMManager.Locale']) {
-        const setting = app.ui.settings.settingsLookup['PMManager.Locale'];
-        setting.name = settingsDefinition.name;
-        setting.tooltip = settingsDefinition.tooltip;
-        setting.category = settingsDefinition.category;
-        setting.options = settingsDefinition.options;
+    if (app.ui.settings.settingsLookup) {
+        // 更新语言设置
+        const localeSetting = app.ui.settings.settingsLookup['PMManager.Locale'];
+        if (localeSetting) {
+            localeSetting.name = settingsDefinition.name;
+            localeSetting.tooltip = settingsDefinition.tooltip;
+            localeSetting.category = settingsDefinition.category;
+            localeSetting.options = settingsDefinition.options;
+        }
+
+        // 更新节点计时器设置
+        const timerSetting = app.ui.settings.settingsLookup['PMManager.ShowNodeTimer'];
+        if (timerSetting && nodeTimerSettingDefinition) {
+            timerSetting.name = nodeTimerSettingDefinition.name;
+            timerSetting.tooltip = nodeTimerSettingDefinition.tooltip;
+            timerSetting.category = nodeTimerSettingDefinition.category;
+        }
 
         // 尝试刷新设置面板
-        const settingsElement = document.querySelector('#comfy-settings');
-        if (settingsElement) {
-            // 找到对应的设置项并更新文本
-            const settingRow = settingsElement.querySelector('[data-setting-id="PMManager.Locale"]');
-            if (settingRow) {
-                const label = settingRow.querySelector('.setting-label');
-                if (label) {
-                    label.textContent = settingsDefinition.name;
-                    if (settingsDefinition.tooltip) {
-                        label.title = settingsDefinition.tooltip;
-                    }
+        refreshSettingsPanel();
+    }
+}
+
+// 刷新设置面板显示
+function refreshSettingsPanel() {
+    const settingsElement = document.querySelector('#comfy-settings');
+    if (!settingsElement) return;
+
+    // 更新语言设置显示
+    const localeRow = settingsElement.querySelector('[data-setting-id="PMManager.Locale"]');
+    if (localeRow) {
+        const label = localeRow.querySelector('.setting-label');
+        if (label) {
+            label.textContent = t('pmManagerLanguage', 'PM Manager Language');
+            label.title = t('pmManagerLanguageDesc', 'Select the display language for PM Manager plugin');
+        }
+        const select = localeRow.querySelector('select');
+        if (select) {
+            const options = select.querySelectorAll('option');
+            const optionTexts = [
+                t('autoFollowComfyUI', 'Auto (Follow ComfyUI)'),
+                t('english', 'English'),
+                t('simplifiedChinese', 'Simplified Chinese')
+            ];
+            options.forEach((opt, index) => {
+                if (optionTexts[index]) {
+                    opt.textContent = optionTexts[index];
                 }
-                // 更新选项文本
-                const select = settingRow.querySelector('select');
-                if (select) {
-                    const options = select.querySelectorAll('option');
-                    settingsDefinition.options.forEach((opt, index) => {
-                        if (options[index]) {
-                            options[index].textContent = opt.text;
-                        }
-                    });
-                }
-            }
+            });
         }
     }
+
+    // 更新节点计时器设置显示
+    const timerRow = settingsElement.querySelector('[data-setting-id="PMManager.ShowNodeTimer"]');
+    if (timerRow) {
+        const label = timerRow.querySelector('.setting-label');
+        if (label) {
+            label.textContent = t('showNodeExecutionTime', 'Show Node Execution Time');
+            label.title = t('showNodeExecutionTimeDesc', 'Display execution time on nodes');
+        }
+    }
+
+    // 更新分类标题
+    const categoryHeaders = settingsElement.querySelectorAll('.settings-category-header');
+    categoryHeaders.forEach(header => {
+        const text = header.textContent;
+        if (text.includes('Node Timer') || text.includes('节点计时器')) {
+            header.textContent = t('nodeTimer', 'Node Timer');
+        }
+        if (text.includes('Language') || text.includes('语言')) {
+            header.textContent = t('language', 'Language');
+        }
+    });
 }
 
 // 获取当前有效的语言设置

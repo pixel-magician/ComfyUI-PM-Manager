@@ -117,5 +117,8 @@
   "thisActionCannotBeUndone": "此操作不可撤销。",
   "overwrite": "覆盖",
   "workflowOverwritten": "工作流覆盖成功",
-  "overwriteWorkflowFailed": "覆盖工作流失败"
+  "overwriteWorkflowFailed": "覆盖工作流失败",
+  "nodeTimer": "节点计时器",
+  "showNodeExecutionTime": "显示节点执行时间",
+  "showNodeExecutionTimeDesc": "在节点上显示执行耗时"
 }
