@@ -12,7 +12,7 @@ const nodeStartTimes = new Map();
 let lastExecutingNodeId = null;
 
 // 调试模式
-const DEBUG = true;
+const DEBUG = false;
 function log(...args) {
     if (DEBUG) console.log('[PM Timer]', ...args);
 }

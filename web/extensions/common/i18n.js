@@ -62,7 +62,7 @@ async function getCurrentLocale() {
                 return settings['Comfy.Locale'];
             }
         } catch (e) {
-            console.warn('[PM Manager] Failed to parse Comfy.Settings:', e);
+            // console.warn('[PM Manager] Failed to parse Comfy.Settings:', e);
         }
     }
 
@@ -101,9 +101,9 @@ async function loadTranslations(targetLocale = null) {
                 // The i18n API returns nested structure: { nodeDefs: {...}, commands: {...} }
                 // We need to extract nodeDefs for node translation lookups
                 translations = data[locale];
-                console.log('[PM Manager] Loaded translations for locale:', locale, 'Keys:', Object.keys(translations).slice(0, 20));
+                // console.log('[PM Manager] Loaded translations for locale:', locale, 'Keys:', Object.keys(translations).slice(0, 20));
             } else {
-                console.warn('[PM Manager] No translations found for locale:', locale);
+                // console.warn('[PM Manager] No translations found for locale:', locale);
                 // Fallback to English if current locale not found
                 if (data && data['en']) {
                     translations = data['en'];
@@ -117,13 +117,13 @@ async function loadTranslations(targetLocale = null) {
                 try {
                     listener(locale);
                 } catch (e) {
-                    console.error('[PM Manager] Error in locale change listener:', e);
+                    // console.error('[PM Manager] Error in locale change listener:', e);
                 }
             });
 
             return translations;
         } catch (error) {
-            console.error('[PM Manager] Failed to load translations:', error);
+            // console.error('[PM Manager] Failed to load translations:', error);
         }
     };
 
@@ -184,9 +184,9 @@ export function t(key, defaultValue = '') {
     }
 
     // Debug: log missing translation keys
-    if (key === 'filter' || key === 'all' || key === 'image' || key === 'audio' || key === 'video' || key === 'folder') {
-        console.log('[PM Manager] Translation not found for key:', key, 'Current locale:', currentLocale, 'Available keys count:', Object.keys(translations).length);
-    }
+    // if (key === 'filter' || key === 'all' || key === 'image' || key === 'audio' || key === 'video' || key === 'folder') {
+    //     console.log('[PM Manager] Translation not found for key:', key, 'Current locale:', currentLocale, 'Available keys count:', Object.keys(translations).length);
+    // }
 
     // Return default value or key
     return defaultValue || key;
@@ -237,7 +237,7 @@ export function getNodeTranslation(nodeId, field = 'display_name') {
 async function setupLocaleMonitoring() {
     const app = await waitForComfyApp();
     if (!app || !app.ui || !app.ui.settings) {
-        console.warn('[PM Manager] Cannot setup locale monitoring - app not ready');
+        // console.warn('[PM Manager] Cannot setup locale monitoring - app not ready');
         return;
     }
 

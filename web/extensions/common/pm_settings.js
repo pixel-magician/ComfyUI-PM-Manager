@@ -38,7 +38,7 @@ export async function registerPMSettings() {
         return;
     }
 
-    console.log('[PM Manager] Registering settings...');
+    // console.log('[PM Manager] Registering settings...');
 
     // 创建设置定义
     settingsDefinition = {
@@ -54,7 +54,7 @@ export async function registerPMSettings() {
         ],
         defaultValue: 'auto',
         onChange: (value) => {
-            console.log('[PM Manager] Language setting changed to:', value);
+            // console.log('[PM Manager] Language setting changed to:', value);
             // 触发重新加载翻译
             if (value !== 'auto') {
                 reloadTranslations(value);
@@ -87,7 +87,7 @@ export async function registerPMSettings() {
     // 注册节点计时器设置
     app.ui.settings.addSetting(nodeTimerSettingDefinition);
 
-    console.log('[PM Manager] Settings registered');
+    // console.log('[PM Manager] Settings registered');
 }
 
 // 更新设置 UI 显示
