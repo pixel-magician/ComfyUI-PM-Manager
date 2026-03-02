@@ -467,11 +467,12 @@ app.registerExtension({
             
             // 处理上一个节点
             if (lastExecutingNodeId && lastExecutingNodeId !== nodeId) {
-                const startTime = nodeStartTimes.get(lastExecutingNodeId);
-                if (startTime) {
-                    const duration = (currentTime - startTime) / 1000;
-                    const node = findNodeById(lastExecutingNodeId);
-                    if (node) {
+                const lastNode = findNodeById(lastExecutingNodeId);
+                if (lastNode) {
+                    const startTime = nodeStartTimes.get(String(lastNode.id));
+                    if (startTime) {
+                        const duration = (currentTime - startTime) / 1000;
+                        const node = lastNode;
                         // 设置新的执行时间，清除旧标记
                         node.pmExecutionTime = duration;
                         node.pmExecutionTimeIsOld = false;
@@ -508,12 +509,13 @@ app.registerExtension({
             const node = findNodeById(nodeId);
             if (node) {
                 node.pmIsExecuting = true;
-                nodeStartTimes.set(String(nodeId), currentTime);
+                nodeStartTimes.set(String(node.id), currentTime);
                 node.setDirtyCanvas(true, false);
                 log('Node executing:', node.id);
+                lastExecutingNodeId = String(node.id);
+            } else {
+                lastExecutingNodeId = nodeId;
             }
-            
-            lastExecutingNodeId = nodeId;
         });
         
         // 监听执行完成事件
@@ -527,42 +529,45 @@ app.registerExtension({
                 nodeId = data.node;
             }
             
-            if (nodeId && lastExecutingNodeId === nodeId) {
-                const startTime = nodeStartTimes.get(String(nodeId));
-                if (startTime) {
-                    const duration = (Date.now() - startTime) / 1000;
-                    const node = findNodeById(nodeId);
-                    if (node) {
-                        node.pmExecutionTime = duration;
-                        node.pmExecutionTimeIsOld = false;
-                        node.pmIsExecuting = false;
-                        
-                        log('Node executed:', node.id, 'time:', node.pmExecutionTime);
-                        
-                        // 如果是子图内的节点，设置父节点的总时间
-                        const parentGroup = getParentGroupNode(node);
-                        if (parentGroup) {
-                            // 初始化子图时间或累加
-                            if (!parentGroup.pmSubgraphTime) parentGroup.pmSubgraphTime = 0;
-                            // 检查是否是旧的子图时间
-                            if (parentGroup.pmSubgraphTimeIsOld) {
-                                // 如果是旧的，直接设置新时间
-                                parentGroup.pmSubgraphTime = duration;
-                            } else {
-                                // 如果是新的，继续累加
-                                parentGroup.pmSubgraphTime += duration;
+            if (nodeId) {
+                const node = findNodeById(nodeId);
+                if (node) {
+                    const nodeKey = String(node.id);
+                    if (lastExecutingNodeId === nodeKey) {
+                        const startTime = nodeStartTimes.get(nodeKey);
+                        if (startTime) {
+                            const duration = (Date.now() - startTime) / 1000;
+                            node.pmExecutionTime = duration;
+                            node.pmExecutionTimeIsOld = false;
+                            node.pmIsExecuting = false;
+                            
+                            log('Node executed:', node.id, 'time:', node.pmExecutionTime);
+                            
+                            // 如果是子图内的节点，设置父节点的总时间
+                            const parentGroup = getParentGroupNode(node);
+                            if (parentGroup) {
+                                // 初始化子图时间或累加
+                                if (!parentGroup.pmSubgraphTime) parentGroup.pmSubgraphTime = 0;
+                                // 检查是否是旧的子图时间
+                                if (parentGroup.pmSubgraphTimeIsOld) {
+                                    // 如果是旧的，直接设置新时间
+                                    parentGroup.pmSubgraphTime = duration;
+                                } else {
+                                    // 如果是新的，继续累加
+                                    parentGroup.pmSubgraphTime += duration;
+                                }
+                                // 清除旧标记
+                                parentGroup.pmSubgraphTimeIsOld = false;
+                                // 触发父节点重绘以显示时间
+                                parentGroup.setDirtyCanvas(true, true);
                             }
-                            // 清除旧标记
-                            parentGroup.pmSubgraphTimeIsOld = false;
-                            // 触发父节点重绘以显示时间
-                            parentGroup.setDirtyCanvas(true, true);
+                            
+                            node.setDirtyCanvas(true, true);
                         }
-                        
-                        node.setDirtyCanvas(true, true);
+                        nodeStartTimes.delete(nodeKey);
+                        lastExecutingNodeId = null;
                     }
                 }
-                nodeStartTimes.delete(String(nodeId));
-                lastExecutingNodeId = null;
             }
         });
     },
