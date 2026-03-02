@@ -439,6 +439,39 @@ app.registerExtension({
             }
         };
         
+        // 在 LGraphNode 原型上添加 serialize 方法支持
+        const origSerialize = LiteGraph.LGraphNode.prototype.serialize;
+        LiteGraph.LGraphNode.prototype.serialize = function() {
+            const data = origSerialize ? origSerialize.call(this) : {};
+            // 保存时间数据
+            if (this.pmExecutionTime) {
+                data.pmExecutionTime = this.pmExecutionTime;
+                data.pmExecutionTimeIsOld = this.pmExecutionTimeIsOld || false;
+            }
+            if (this.pmSubgraphTime) {
+                data.pmSubgraphTime = this.pmSubgraphTime;
+                data.pmSubgraphTimeIsOld = this.pmSubgraphTimeIsOld || false;
+            }
+            return data;
+        };
+        
+        // 在 LGraphNode 原型上添加 configure 方法支持
+        const origConfigure = LiteGraph.LGraphNode.prototype.configure;
+        LiteGraph.LGraphNode.prototype.configure = function(data) {
+            if (origConfigure) {
+                origConfigure.call(this, data);
+            }
+            // 恢复时间数据并标记为旧的
+            if (data.pmExecutionTime) {
+                this.pmExecutionTime = data.pmExecutionTime;
+                this.pmExecutionTimeIsOld = true;
+            }
+            if (data.pmSubgraphTime) {
+                this.pmSubgraphTime = data.pmSubgraphTime;
+                this.pmSubgraphTimeIsOld = true;
+            }
+        };
+        
         // 监听执行开始事件 - 清除所有节点的时间
         api.addEventListener("execution_start", (data) => {
             log('execution_start', data);
@@ -606,6 +639,39 @@ app.registerExtension({
                 const text = this.pmExecutionTime.toFixed(2) + "s";
                 const isOld = this.pmExecutionTimeIsOld || false;
                 drawTimerLabel(ctx, text, false, isOld);
+            }
+        };
+        
+        // 保存原始的 serialize 方法
+        const origSerialize = nodeType.prototype.serialize;
+        nodeType.prototype.serialize = function() {
+            const data = origSerialize ? origSerialize.call(this) : {};
+            // 保存时间数据
+            if (this.pmExecutionTime) {
+                data.pmExecutionTime = this.pmExecutionTime;
+                data.pmExecutionTimeIsOld = this.pmExecutionTimeIsOld || false;
+            }
+            if (this.pmSubgraphTime) {
+                data.pmSubgraphTime = this.pmSubgraphTime;
+                data.pmSubgraphTimeIsOld = this.pmSubgraphTimeIsOld || false;
+            }
+            return data;
+        };
+        
+        // 保存原始的 configure 方法
+        const origConfigure = nodeType.prototype.configure;
+        nodeType.prototype.configure = function(data) {
+            if (origConfigure) {
+                origConfigure.call(this, data);
+            }
+            // 恢复时间数据并标记为旧的
+            if (data.pmExecutionTime) {
+                this.pmExecutionTime = data.pmExecutionTime;
+                this.pmExecutionTimeIsOld = true;
+            }
+            if (data.pmSubgraphTime) {
+                this.pmSubgraphTime = data.pmSubgraphTime;
+                this.pmSubgraphTimeIsOld = true;
             }
         };
     },
