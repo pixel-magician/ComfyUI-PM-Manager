@@ -11,6 +11,44 @@ import { t } from "./i18n.js";
 const nodeStartTimes = new Map();
 let lastExecutingNodeId = null;
 
+// 临时存储时间数据（用于工作流 tab 切换时保留）
+const tempTimeStorage = new Map();
+
+// 生成节点唯一标识
+function getNodeKey(node) {
+    const type = node.type || node.comfyClass || 'unknown';
+    const pos = node.pos ? (Array.isArray(node.pos) ? node.pos : [node.pos.x, node.pos.y]) : [0, 0];
+    const title = node.title || '';
+    return `${type}_${pos[0]}_${pos[1]}_${title}`;
+}
+
+// 保存时间数据到临时存储
+function saveTimeToTempStorage(node) {
+    const key = getNodeKey(node);
+    tempTimeStorage.set(key, {
+        pmExecutionTime: node.pmExecutionTime,
+        pmExecutionTimeIsOld: true,
+        pmSubgraphTime: node.pmSubgraphTime,
+        pmSubgraphTimeIsOld: true
+    });
+}
+
+// 从临时存储恢复时间数据
+function restoreTimeFromTempStorage(node) {
+    const key = getNodeKey(node);
+    const data = tempTimeStorage.get(key);
+    if (data) {
+        if (data.pmExecutionTime) {
+            node.pmExecutionTime = data.pmExecutionTime;
+            node.pmExecutionTimeIsOld = data.pmExecutionTimeIsOld;
+        }
+        if (data.pmSubgraphTime) {
+            node.pmSubgraphTime = data.pmSubgraphTime;
+            node.pmSubgraphTimeIsOld = data.pmSubgraphTimeIsOld;
+        }
+    }
+}
+
 // 调试模式
 const DEBUG = false;
 function log(...args) {
@@ -439,39 +477,6 @@ app.registerExtension({
             }
         };
         
-        // 在 LGraphNode 原型上添加 serialize 方法支持
-        const origSerialize = LiteGraph.LGraphNode.prototype.serialize;
-        LiteGraph.LGraphNode.prototype.serialize = function() {
-            const data = origSerialize ? origSerialize.call(this) : {};
-            // 保存时间数据
-            if (this.pmExecutionTime) {
-                data.pmExecutionTime = this.pmExecutionTime;
-                data.pmExecutionTimeIsOld = this.pmExecutionTimeIsOld || false;
-            }
-            if (this.pmSubgraphTime) {
-                data.pmSubgraphTime = this.pmSubgraphTime;
-                data.pmSubgraphTimeIsOld = this.pmSubgraphTimeIsOld || false;
-            }
-            return data;
-        };
-        
-        // 在 LGraphNode 原型上添加 configure 方法支持
-        const origConfigure = LiteGraph.LGraphNode.prototype.configure;
-        LiteGraph.LGraphNode.prototype.configure = function(data) {
-            if (origConfigure) {
-                origConfigure.call(this, data);
-            }
-            // 恢复时间数据并标记为旧的
-            if (data.pmExecutionTime) {
-                this.pmExecutionTime = data.pmExecutionTime;
-                this.pmExecutionTimeIsOld = true;
-            }
-            if (data.pmSubgraphTime) {
-                this.pmSubgraphTime = data.pmSubgraphTime;
-                this.pmSubgraphTimeIsOld = true;
-            }
-        };
-        
         // 监听执行开始事件 - 清除所有节点的时间
         api.addEventListener("execution_start", (data) => {
             log('execution_start', data);
@@ -511,6 +516,9 @@ app.registerExtension({
                         node.pmExecutionTimeIsOld = false;
                         node.pmIsExecuting = false;
                         
+                        // 保存到临时存储
+                        saveTimeToTempStorage(node);
+                        
                         log('Node finished:', node.id, 'time:', node.pmExecutionTime);
                         
                         // 如果是子图内的节点，设置父节点的总时间
@@ -528,6 +536,8 @@ app.registerExtension({
                             }
                             // 清除旧标记
                             parentGroup.pmSubgraphTimeIsOld = false;
+                            // 保存到临时存储
+                            saveTimeToTempStorage(parentGroup);
                             log('Added to parent group:', parentGroup.id, 'total:', parentGroup.pmSubgraphTime);
                             // 触发父节点重绘以显示时间
                             parentGroup.setDirtyCanvas(true, true);
@@ -574,6 +584,9 @@ app.registerExtension({
                             node.pmExecutionTimeIsOld = false;
                             node.pmIsExecuting = false;
                             
+                            // 保存到临时存储
+                            saveTimeToTempStorage(node);
+                            
                             log('Node executed:', node.id, 'time:', node.pmExecutionTime);
                             
                             // 如果是子图内的节点，设置父节点的总时间
@@ -591,6 +604,8 @@ app.registerExtension({
                                 }
                                 // 清除旧标记
                                 parentGroup.pmSubgraphTimeIsOld = false;
+                                // 保存到临时存储
+                                saveTimeToTempStorage(parentGroup);
                                 // 触发父节点重绘以显示时间
                                 parentGroup.setDirtyCanvas(true, true);
                             }
@@ -641,45 +656,16 @@ app.registerExtension({
                 drawTimerLabel(ctx, text, false, isOld);
             }
         };
-        
-        // 保存原始的 serialize 方法
-        const origSerialize = nodeType.prototype.serialize;
-        nodeType.prototype.serialize = function() {
-            const data = origSerialize ? origSerialize.call(this) : {};
-            // 保存时间数据
-            if (this.pmExecutionTime) {
-                data.pmExecutionTime = this.pmExecutionTime;
-                data.pmExecutionTimeIsOld = this.pmExecutionTimeIsOld || false;
-            }
-            if (this.pmSubgraphTime) {
-                data.pmSubgraphTime = this.pmSubgraphTime;
-                data.pmSubgraphTimeIsOld = this.pmSubgraphTimeIsOld || false;
-            }
-            return data;
-        };
-        
-        // 保存原始的 configure 方法
-        const origConfigure = nodeType.prototype.configure;
-        nodeType.prototype.configure = function(data) {
-            if (origConfigure) {
-                origConfigure.call(this, data);
-            }
-            // 恢复时间数据并标记为旧的
-            if (data.pmExecutionTime) {
-                this.pmExecutionTime = data.pmExecutionTime;
-                this.pmExecutionTimeIsOld = true;
-            }
-            if (data.pmSubgraphTime) {
-                this.pmSubgraphTime = data.pmSubgraphTime;
-                this.pmSubgraphTimeIsOld = true;
-            }
-        };
     },
     
     // 支持保存/加载执行时间数据
     loadedGraphNode(node) {
         // 加载时标记时间数据为旧的（如果有的话）
         node.pmIsExecuting = false;
+        
+        // 尝试从临时存储恢复时间数据
+        restoreTimeFromTempStorage(node);
+        
         if (node.pmExecutionTime) {
             node.pmExecutionTimeIsOld = true;
         }
