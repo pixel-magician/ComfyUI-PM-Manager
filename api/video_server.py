@@ -32,6 +32,18 @@ def is_safe_path(path, strict=False):
 
 
 async def resolve_path(query):
+    # 优先使用绝对路径
+    if "path" in query:
+        file_path = query["path"]
+        if not os.path.exists(file_path):
+            return server.web.Response(status=204)
+        if not os.path.isfile(file_path):
+            return server.web.Response(status=204)
+        filename = os.path.basename(file_path)
+        output_dir = os.path.dirname(file_path)
+        return file_path, filename, output_dir
+
+    # 兼容旧代码：使用 filename + type + subfolder
     if "filename" not in query:
         return server.web.Response(status=204)
     filename = query["filename"]

@@ -148,7 +148,11 @@ async def list_pm_input(request):
 
     items = scan_media_directory(pm_input_dir, path)
 
-    return web.json_response({"items": items, "current_path": path})
+    # 为每个 item 添加绝对路径
+    for item in items:
+        item['absolute_path'] = os.path.join(pm_input_dir, item['path'])
+
+    return web.json_response({"items": items, "current_path": path, "base_dir": pm_input_dir})
 
 
 async def get_pm_input_preview(request):
@@ -260,7 +264,11 @@ async def list_pm_output(request):
 
     items = scan_media_directory(pm_output_dir, path)
 
-    return web.json_response({"items": items, "current_path": path})
+    # 为每个 item 添加绝对路径
+    for item in items:
+        item['absolute_path'] = os.path.join(pm_output_dir, item['path'])
+
+    return web.json_response({"items": items, "current_path": path, "base_dir": pm_output_dir})
 
 
 async def get_pm_output_preview(request):
@@ -485,3 +493,36 @@ async def upload_pm_output(request):
     except Exception as e:
         logger.error(f"Upload error: {e}")
         return web.Response(status=500, text=str(e))
+
+
+# ============ Absolute Path View API ============
+
+async def get_pm_file_by_absolute_path(request):
+    """
+    通过绝对路径访问文件
+    查询参数: path (绝对路径)
+    """
+    file_path = request.rel_url.query.get("path", "")
+    file_path = urllib.parse.unquote(file_path)
+
+    if not file_path:
+        return web.Response(status=400, text="Missing path parameter")
+
+    # 安全检查：确保路径在允许的目录内（input 或 output 目录）
+    pm_input_dir = get_pm_input_dir()
+    pm_output_dir = get_pm_output_dir()
+
+    # 规范化路径
+    file_path = os.path.normpath(file_path)
+
+    # 检查文件是否在允许的目录内
+    if not (file_path.startswith(pm_input_dir) or file_path.startswith(pm_output_dir)):
+        return web.Response(status=403, text="Access denied: file outside allowed directories")
+
+    if not os.path.exists(file_path):
+        return web.Response(status=404, text="File not found")
+
+    if not os.path.isfile(file_path):
+        return web.Response(status=400, text="Not a file")
+
+    return web.FileResponse(file_path)

@@ -8,6 +8,20 @@ import node_helpers
 from comfy_api.latest import IO
 
 
+def get_file_path(path):
+    """Helper function to get file path, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return path
+    return folder_paths.get_annotated_filepath(path)
+
+
+def file_exists(path):
+    """Helper function to check if file exists, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return os.path.exists(path) and os.path.isfile(path)
+    return folder_paths.exists_annotated_filepath(path)
+
+
 class PMLoadImage(IO.ComfyNode):
     @classmethod
     def define_schema(cls) -> IO.Schema:
@@ -31,7 +45,7 @@ class PMLoadImage(IO.ComfyNode):
 
     @classmethod
     def execute(cls, image) -> IO.NodeOutput:
-        image_path = folder_paths.get_annotated_filepath(image)
+        image_path = get_file_path(image)
 
         img = node_helpers.pillow(Image.open, image_path)
 
@@ -80,7 +94,7 @@ class PMLoadImage(IO.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, image, **kwargs):
-        image_path = folder_paths.get_annotated_filepath(image)
+        image_path = get_file_path(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
             m.update(f.read())
@@ -88,7 +102,7 @@ class PMLoadImage(IO.ComfyNode):
 
     @classmethod
     def validate_inputs(cls, image, **kwargs):
-        if not folder_paths.exists_annotated_filepath(image):
+        if not file_exists(image):
             return "Invalid image file: {}".format(image)
         return True
 

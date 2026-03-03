@@ -56,7 +56,11 @@ export async function openPMInputManagerForAudio(node, directoryType = 'input') 
         if (node.widgets) {
           const audioWidget = node.widgets.find(w => w.name === 'audio');
           if (audioWidget) {
-            audioWidget.value = audioPath;
+            // 从绝对路径中提取文件名
+            const fileName = audioPath.split(/[/\\]/).pop();
+            // 输入框只显示文件名
+            audioWidget.value = fileName;
+            // 内部保存完整的绝对路径
             node.pm_selected_audio = audioPath;
             node.pm_directory_type = directoryType;
             // 标记这是从PM管理器选择的文件
@@ -89,6 +93,10 @@ app.registerExtension({
         
         const node = this;
         const pathWidget = this.widgets.find((w) => w.name === "audio");
+        // 自定义序列化函数，返回完整路径而不是文件名
+        pathWidget.serializeValue = () => {
+          return node.pm_selected_audio || pathWidget.value;
+        };
         const fileInput = document.createElement("input");
         
         const onNodeRemoved = this.onRemoved;
@@ -176,8 +184,27 @@ app.registerExtension({
         
         var element = document.createElement("audio");
         element.controls = true;
+        element.style.width = "100%";
+        
+        // 创建容器
+        const container = document.createElement("div");
+        container.style.width = "100%";
+        container.style.height = "50px";
+        container.appendChild(element);
+        
+        // 只阻止点击事件冒泡到节点
+        const stopEvents = ['mousedown', 'mouseup', 'click', 'dblclick', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
+        stopEvents.forEach(eventType => {
+            container.addEventListener(eventType, (e) => {
+                e.stopPropagation();
+            }, false);
+            element.addEventListener(eventType, (e) => {
+                e.stopPropagation();
+            }, false);
+        });
+        
         const previewNode = this;
-        var previewWidget = this.addDOMWidget("audiopreview", "preview", element, {
+        var previewWidget = this.addDOMWidget("audiopreview", "preview", container, {
             serialize: false,
             hideOnZoom: true,
             getValue() {
@@ -191,20 +218,54 @@ app.registerExtension({
             return [width, 50];
         };
         
-        previewWidget.value = { params: {} };
+        previewWidget.value = { path: null };
         previewWidget.updateSource = function () {
-            if (!this.value.params || !this.value.params.filename) {
+            if (!this.value.path) {
                 return;
             }
-            let params = {};
-            Object.assign(params, this.value.params);
-            params.timestamp = Date.now();
-            element.src = api.apiURL('/view?' + new URLSearchParams(params));
+            // 使用绝对路径访问 /pm/view 端点
+            const params = new URLSearchParams({
+                path: this.value.path,
+                timestamp: Date.now()
+            });
+            element.src = api.apiURL('/pm/view?' + params.toString());
         };
-        
-        const updateAudioSource = (filename) => {
-            if (filename) {
-                previewWidget.value.params = { filename: filename, type: node.pm_directory_type || "input" };
+
+        // 辅助函数：判断路径是否为绝对路径
+        const isAbsolutePath = (path) => {
+            if (!path) return false;
+            // Windows 绝对路径: C:\... 或 D:/...
+            // Linux/Mac 绝对路径: /...
+            return /^[a-zA-Z]:[\\\/]/.test(path) || path.startsWith('/');
+        };
+
+        // 辅助函数：将相对路径转换为绝对路径
+        const toAbsolutePath = (relativePath, type) => {
+            if (!relativePath) return relativePath;
+            if (isAbsolutePath(relativePath)) return relativePath;
+            
+            // 获取基础目录
+            const basePath = type === 'output' 
+                ? window.pm_output_base_dir 
+                : window.pm_input_base_dir;
+            
+            if (!basePath) {
+                // 如果基础目录未设置，尝试从 API 获取
+                return relativePath;
+            }
+            
+            // 组合成绝对路径
+            return basePath + '/' + relativePath;
+        };
+
+        const updateAudioSource = (filePath) => {
+            // 优先使用 pm_selected_audio 中保存的完整绝对路径
+            const actualPath = node.pm_selected_audio || filePath;
+            if (actualPath) {
+                // 如果是相对路径，转换为绝对路径
+                const absolutePath = toAbsolutePath(actualPath, node.pm_directory_type || "input");
+                // 保存绝对路径
+                previewWidget.value.path = absolutePath;
                 previewWidget.updateSource();
             }
         };
@@ -218,11 +279,16 @@ app.registerExtension({
                 // 只有当不是从PM管理器选择文件时，才重置 directory_type 为 input
                 if (!node._pm_selecting_file) {
                     node.pm_directory_type = "input";
+                    // 如果不是从PM管理器选择的，widget的值就是相对路径，也需要保存
+                    node.pm_selected_audio = filename;
                 }
                 updateAudioSource(filename);
             };
 
             if (pathWidget.value) {
+                if (!node.pm_selected_audio) {
+                    node.pm_selected_audio = pathWidget.value;
+                }
                 updateAudioSource(pathWidget.value);
             }
         }
@@ -239,15 +305,25 @@ app.registerExtension({
           this.pm_directory_type = info.pm_directory_type;
         }
 
-        if (info.widgets_values && info.widgets_values.length > 0) {
-          const savedValue = info.widgets_values[0];
-          if (savedValue) {
-            this.pm_selected_audio = savedValue;
+        // 优先从 pm_selected_audio 恢复完整路径
+        let savedValue = info.pm_selected_audio;
+        if (!savedValue && info.widgets_values && info.widgets_values.length > 0) {
+          savedValue = info.widgets_values[0];
+        }
+        
+        if (savedValue) {
+          // 保存完整的绝对路径
+          this.pm_selected_audio = savedValue;
+          // 输入框只显示文件名
+          const pathWidget = this.widgets.find(w => w.name === 'audio');
+          if (pathWidget) {
+            const fileName = savedValue.split(/[/\\]/).pop();
+            pathWidget.value = fileName;
           }
         }
       };
 
-      // 保存 directory_type 到序列化数据
+      // 保存 directory_type 和完整路径到序列化数据
       const originalOnSerialize = nodeType.prototype.onSerialize;
       nodeType.prototype.onSerialize = function(info) {
         if (originalOnSerialize) {
@@ -255,6 +331,10 @@ app.registerExtension({
         }
         if (this.pm_directory_type) {
           info.pm_directory_type = this.pm_directory_type;
+        }
+        // 保存完整的绝对路径
+        if (this.pm_selected_audio) {
+          info.pm_selected_audio = this.pm_selected_audio;
         }
       };
     }

@@ -56,7 +56,11 @@ export async function openPMInputManagerForVideo(node, directoryType = 'input') 
         if (node.widgets) {
           const videoWidget = node.widgets.find(w => w.name === 'video');
           if (videoWidget) {
-            videoWidget.value = videoPath;
+            // 从绝对路径中提取文件名
+            const fileName = videoPath.split(/[/\\]/).pop();
+            // 输入框只显示文件名
+            videoWidget.value = fileName;
+            // 内部保存完整的绝对路径
             node.pm_selected_video = videoPath;
             node.pm_directory_type = directoryType;
             // 标记这是从PM管理器选择的文件，不是手动切换下拉框
@@ -485,6 +489,10 @@ app.registerExtension({
         
         const node = this;
         const pathWidget = this.widgets.find((w) => w.name === "video");
+        // 自定义序列化函数，返回完整路径而不是文件名
+        pathWidget.serializeValue = () => {
+          return node.pm_selected_video || pathWidget.value;
+        };
         const fileInput = document.createElement("input");
         
         const onNodeRemoved = this.onRemoved;
@@ -589,6 +597,14 @@ app.registerExtension({
         element.style.width = "100%";  // 宽度填满节点
         element.style.height = "100%";
         element.style.objectFit = "contain"; // 保持比例适应
+        // 阻止事件冒泡，避免与节点交互冲突
+        element.addEventListener('mousedown', (e) => e.stopPropagation());
+        element.addEventListener('mouseup', (e) => e.stopPropagation());
+        element.addEventListener('click', (e) => e.stopPropagation());
+        element.addEventListener('mousemove', (e) => e.stopPropagation());
+        element.addEventListener('wheel', (e) => e.stopPropagation());
+        element.addEventListener('contextmenu', (e) => e.stopPropagation());
+        
         container.appendChild(element);
         
         const previewNode = this;
@@ -657,17 +673,14 @@ app.registerExtension({
           container.hidden = true;
         });
         
-        previewWidget.value = { params: {} };
+        previewWidget.value = { path: null };
         previewWidget.updateSource = function () {
           // 切换视频源时先隐藏容器，等加载完成后再显示
           container.style.visibility = "hidden";
           
-          if (!this.value.params || !this.value.params.filename) {
+          if (!this.value.path) {
             return;
           }
-          let params = {};
-          Object.assign(params, this.value.params);
-          params.timestamp = Date.now();
           
           const widthWidget = node.widgets?.find((w) => w.name === "custom_width");
           const heightWidget = node.widgets?.find((w) => w.name === "custom_height");
@@ -678,25 +691,33 @@ app.registerExtension({
             target_width = minWidth;
           }
           
+          let force_size = target_width + "x?";
           if (widthWidget && heightWidget && widthWidget.value && heightWidget.value) {
             let ar = widthWidget.value / heightWidget.value;
-            params.force_size = target_width+"x"+(target_width/ar);
+            force_size = target_width+"x"+(target_width/ar);
           } else if (widthWidget && widthWidget.value) {
-            params.force_size = widthWidget.value+"x?";
+            force_size = widthWidget.value+"x?";
           } else if (heightWidget && heightWidget.value) {
-            params.force_size = "?x"+heightWidget.value;
-          } else {
-            params.force_size = target_width+"x?";
+            force_size = "?x"+heightWidget.value;
           }
           
-          element.src = api.apiURL('/pm/viewvideo?' + new URLSearchParams(params));
+          // 使用绝对路径访问 /pm/viewvideo 端点
+          const params = new URLSearchParams({
+            path: this.value.path,
+            force_size: force_size,
+            timestamp: Date.now()
+          });
+          
+          element.src = api.apiURL('/pm/viewvideo?' + params.toString());
           
           delete node.video_query;
           const doQuery = async () => {
-            if (!previewWidget?.value?.params?.filename) {
+            if (!previewWidget?.value?.path) {
               return;
             }
-            let qurl = api.apiURL('/pm/queryvideo?' + new URLSearchParams(previewWidget.value.params));
+            let qurl = api.apiURL('/pm/queryvideo?' + new URLSearchParams({
+              path: previewWidget.value.path
+            }));
             let query = undefined;
             try {
               let query_res = await fetch(qurl);
@@ -711,31 +732,46 @@ app.registerExtension({
         };
         
         this.updateParameters = (params, force_update) => {
-          if (!previewWidget.value.params) {
-            if(typeof(previewWidget.value) != 'object') {
-              previewWidget.value =  {hidden: false, paused: false};
-            }
-            previewWidget.value.params = {};
-          }
-          if (!force_update && !Object.entries(params).some(([k,v]) => previewWidget.value.params[k] !== v)) {
-            return;
-          }
-          Object.assign(previewWidget.value.params, params);
+          // 保存参数到节点，在 updateSource 时重新计算
+          previewWidget._cachedParams = params;
           previewWidget.updateSource();
         };
         
-        const updateVideoSource = (filename) => {
-          if (filename) {
-            previewWidget.value.params = { 
-              filename: filename, 
-              type: node.pm_directory_type || "input",
-              force_rate: node.widgets?.find((w) => w.name === "force_rate")?.value,
-              frame_load_cap: node.widgets?.find((w) => w.name === "frame_load_cap")?.value,
-              skip_first_frames: node.widgets?.find((w) => w.name === "skip_first_frames")?.value,
-              select_every_nth: node.widgets?.find((w) => w.name === "select_every_nth")?.value,
-              custom_width: node.widgets?.find((w) => w.name === "custom_width")?.value,
-              custom_height: node.widgets?.find((w) => w.name === "custom_height")?.value
-            };
+        // 辅助函数：判断路径是否为绝对路径
+        const isAbsolutePath = (path) => {
+          if (!path) return false;
+          // Windows 绝对路径: C:\... 或 D:/...
+          // Linux/Mac 绝对路径: /...
+          return /^[a-zA-Z]:[\\\/]/.test(path) || path.startsWith('/');
+        };
+
+        // 辅助函数：将相对路径转换为绝对路径
+        const toAbsolutePath = (relativePath, type) => {
+          if (!relativePath) return relativePath;
+          if (isAbsolutePath(relativePath)) return relativePath;
+          
+          // 获取基础目录
+          const basePath = type === 'output' 
+            ? window.pm_output_base_dir 
+            : window.pm_input_base_dir;
+          
+          if (!basePath) {
+            // 如果基础目录未设置，尝试从 API 获取
+            return relativePath;
+          }
+          
+          // 组合成绝对路径
+          return basePath + '/' + relativePath;
+        };
+
+        const updateVideoSource = (filePath) => {
+          // 优先使用 pm_selected_video 中保存的完整绝对路径
+          const actualPath = node.pm_selected_video || filePath;
+          if (actualPath) {
+            // 如果是相对路径，转换为绝对路径
+            const absolutePath = toAbsolutePath(actualPath, node.pm_directory_type || "input");
+            // 保存绝对路径
+            previewWidget.value.path = absolutePath;
             previewWidget.updateSource();
           }
         };
@@ -850,12 +886,17 @@ app.registerExtension({
             // 因为下拉框中的文件默认都来自 input 目录
             if (!node._pm_selecting_file) {
               node.pm_directory_type = "input";
+              // 如果不是从PM管理器选择的，widget的值就是相对路径
+              node.pm_selected_video = filename;
             }
             updateVideoSource(filename);
           };
 
           if (pathWidget.value) {
             setTimeout(() => {
+              if (!node.pm_selected_video) {
+                node.pm_selected_video = pathWidget.value;
+              }
               updateVideoSource(pathWidget.value);
             }, 50);
           }
@@ -873,40 +914,64 @@ app.registerExtension({
           this.pm_directory_type = info.pm_directory_type;
         }
 
-        if (info.widgets_values && info.widgets_values.length > 0) {
-          const savedValue = info.widgets_values[0];
-          if (savedValue) {
-            this.pm_selected_video = savedValue;
-
-            setTimeout(() => {
-              const pathWidget = this.widgets?.find((w) => w.name === "video");
-              if (pathWidget && pathWidget.value) {
-                const updateVideoSourceFunc = (filename) => {
-                  if (filename) {
-                    const previewWidget = this.widgets?.find((w) => w.name === "videopreview");
-                    if (previewWidget) {
-                      previewWidget.value.params = {
-                        filename: filename,
-                        type: this.pm_directory_type || "input",
-                        force_rate: this.widgets?.find((w) => w.name === "force_rate")?.value,
-                        frame_load_cap: this.widgets?.find((w) => w.name === "frame_load_cap")?.value,
-                        skip_first_frames: this.widgets?.find((w) => w.name === "skip_first_frames")?.value,
-                        select_every_nth: this.widgets?.find((w) => w.name === "select_every_nth")?.value,
-                        custom_width: this.widgets?.find((w) => w.name === "custom_width")?.value,
-                        custom_height: this.widgets?.find((w) => w.name === "custom_height")?.value
-                      };
-                      previewWidget.updateSource?.();
-                    }
-                  }
-                };
-                updateVideoSourceFunc(pathWidget.value);
-              }
-            }, 100);
+        // 优先从 pm_selected_video 恢复完整路径
+        let savedValue = info.pm_selected_video;
+        if (!savedValue && info.widgets_values && info.widgets_values.length > 0) {
+          savedValue = info.widgets_values[0];
+        }
+        
+        if (savedValue) {
+          // 保存完整的绝对路径
+          this.pm_selected_video = savedValue;
+          // 输入框只显示文件名
+          const pathWidget = this.widgets?.find((w) => w.name === "video");
+          if (pathWidget) {
+            const fileName = savedValue.split(/[/\\]/).pop();
+            pathWidget.value = fileName;
           }
+          
+          // 恢复后更新预览
+          setTimeout(() => {
+            if (pathWidget && pathWidget.value) {
+              const updateVideoSourceFunc = (filePath) => {
+                if (filePath) {
+                  const previewWidget = this.widgets?.find((w) => w.name === "videopreview");
+                  if (previewWidget) {
+                    // 优先使用 pm_selected_video 中保存的完整绝对路径
+                    const actualPath = this.pm_selected_video || filePath;
+                    // 如果是相对路径，转换为绝对路径
+                    const isAbsolutePath = (path) => {
+                      if (!path) return false;
+                      return /^[a-zA-Z]:[\\\/]/.test(path) || path.startsWith('/');
+                    };
+                    const toAbsolutePath = (relativePath, type) => {
+                      if (!relativePath) return relativePath;
+                      if (isAbsolutePath(relativePath)) return relativePath;
+                      
+                      const basePath = type === 'output' 
+                        ? window.pm_output_base_dir 
+                        : window.pm_input_base_dir;
+                      
+                      if (!basePath) {
+                        return relativePath;
+                      }
+                      
+                      return basePath + '/' + relativePath;
+                    };
+                    
+                    const absolutePath = toAbsolutePath(actualPath, this.pm_directory_type || "input");
+                    previewWidget.value.path = absolutePath;
+                    previewWidget.updateSource?.();
+                  }
+                }
+              };
+              updateVideoSourceFunc(pathWidget.value);
+            }
+          }, 100);
         }
       };
 
-      // 保存 directory_type 到序列化数据
+      // 保存 directory_type 和完整路径到序列化数据
       const originalOnSerialize = nodeType.prototype.onSerialize;
       nodeType.prototype.onSerialize = function(info) {
         if (originalOnSerialize) {
@@ -914,6 +979,10 @@ app.registerExtension({
         }
         if (this.pm_directory_type) {
           info.pm_directory_type = this.pm_directory_type;
+        }
+        // 保存完整的绝对路径
+        if (this.pm_selected_video) {
+          info.pm_selected_video = this.pm_selected_video;
         }
       };
     }

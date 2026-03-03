@@ -75,17 +75,13 @@ export async function openPMInputManagerForImage(node, directoryType = 'input') 
         if (node.widgets) {
           const imageWidget = node.widgets.find(w => w.name === 'image');
           if (imageWidget) {
-            // 根据目录类型添加标注后缀（内部存储用）
-            const annotatedPath = directoryType === 'output' 
-              ? `${imagePath}[output]` 
-              : `${imagePath}[input]`;
-            
-            // 保存完整路径（带标注）
-            node.pm_selected_image = annotatedPath;
+            // 从绝对路径中提取文件名
+            const fileName = imagePath.split(/[/\\]/).pop();
+            // 输入框只显示文件名
+            imageWidget.value = fileName;
+            // 内部保存完整的绝对路径
+            node.pm_selected_image = imagePath;
             node.pm_directory_type = directoryType;
-            
-            // 设置 widget 的值为不带标注的文件名（用于显示）
-            imageWidget.value = imagePath;
             
             // 标记这是从PM管理器选择的文件
             node._pm_selecting_file = true;
@@ -119,6 +115,10 @@ app.registerExtension({
 
         const node = this;
         const pathWidget = this.widgets.find((w) => w.name === "image");
+        // 自定义序列化函数，返回完整路径而不是文件名
+        pathWidget.serializeValue = () => {
+          return node.pm_selected_image || pathWidget.value;
+        };
         const fileInput = document.createElement("input");
 
         const onNodeRemoved = this.onRemoved;
@@ -289,25 +289,60 @@ app.registerExtension({
         const previewWidget = new PMPreviewWidget(this);
         this.addCustomWidget(previewWidget);
         
+        // 辅助函数：判断路径是否为绝对路径
+        const isAbsolutePath = (path) => {
+          if (!path) return false;
+          // Windows 绝对路径: C:\... 或 D:/...
+          // Linux/Mac 绝对路径: /...
+          return /^[a-zA-Z]:[\\\/]/.test(path) || path.startsWith('/');
+        };
+
+        // 辅助函数：将相对路径转换为绝对路径
+        const toAbsolutePath = (relativePath, type) => {
+          if (!relativePath) return relativePath;
+          if (isAbsolutePath(relativePath)) return relativePath;
+          
+          // 获取基础目录
+          const basePath = type === 'output' 
+            ? window.pm_output_base_dir 
+            : window.pm_input_base_dir;
+          
+          if (!basePath) {
+            // 如果基础目录未设置，尝试从 API 获取
+            return relativePath;
+          }
+          
+          // 组合成绝对路径
+          return basePath + '/' + relativePath;
+        };
+
         // 兼容旧代码的 updateSource 调用
         previewWidget.updateSource = function() {
           const imageWidget = node.widgets.find(w => w.name === 'image');
-          if (!imageWidget || !imageWidget.value) {
+          if (!imageWidget) {
             this.image.src = "";
             this.imageLoaded = false;
             return;
           }
+
+          // 优先使用 pm_selected_image 中保存的完整绝对路径
+          const filePath = node.pm_selected_image || imageWidget.value;
+          if (!filePath) {
+            this.image.src = "";
+            this.imageLoaded = false;
+            return;
+          }
+
+          // 如果是相对路径，转换为绝对路径
+          const absolutePath = toAbsolutePath(filePath, node.pm_directory_type || 'input');
           
-          const filename = imageWidget.value;
-          const type = node.pm_directory_type || "input";
-          
+          // 使用绝对路径访问 /pm/view 端点
           const params = new URLSearchParams({
-            filename: filename,
-            type: type,
+            path: absolutePath,
             rand: Math.random()
           });
-          
-          const url = api.apiURL('/view?' + params.toString());
+
+          const url = api.apiURL('/pm/view?' + params.toString());
           // 调用类方法更新
           PMPreviewWidget.prototype.updateSource.call(this, url);
         };
@@ -323,10 +358,9 @@ app.registerExtension({
             // 只有当不是从PM管理器选择文件时，才重置 directory_type 为 input
             if (!node._pm_selecting_file) {
               node.pm_directory_type = 'input';
+              // 如果不是从PM管理器选择的，widget的值就是相对路径
+              node.pm_selected_image = value;
             }
-            // 更新内部保存的完整路径
-            const type = node.pm_directory_type || 'input';
-            node.pm_selected_image = value + `[${type}]`;
 
             // 更新预览
             setTimeout(() => {
@@ -339,7 +373,9 @@ app.registerExtension({
           // 如果 widget 已经有值（刚创建时），立即更新预览
           if (imageWidget.value) {
             setTimeout(() => {
-              node.pm_selected_image = imageWidget.value + `[${node.pm_directory_type || 'input'}]`;
+              if (!node.pm_selected_image) {
+                node.pm_selected_image = imageWidget.value;
+              }
               if (previewWidget && previewWidget.updateSource) {
                 previewWidget.updateSource();
               }
@@ -354,24 +390,20 @@ app.registerExtension({
           originalOnConfigure.apply(this, arguments);
         }
         
-        // 优先从 pm_selected_image 读取带标注的完整路径
+        // 优先从 pm_selected_image 恢复完整路径
         let savedValue = info.pm_selected_image;
-        
-        // 如果没有 pm_selected_image，则尝试从 widgets_values 读取
         if (!savedValue && info.widgets_values && info.widgets_values.length > 0) {
           savedValue = info.widgets_values[0];
         }
         
         if (savedValue) {
+          // 保存完整的绝对路径
           this.pm_selected_image = savedValue;
-          // 根据保存的值确定目录类型
-          const dirType = getPathType(savedValue);
-          this.pm_directory_type = dirType;
-          
-          // 恢复 widget 的显示值（不带标注）
+          // 输入框只显示文件名
           const imageWidget = this.widgets.find(w => w.name === 'image');
           if (imageWidget) {
-            imageWidget.value = getDisplayFilename(savedValue);
+            const fileName = savedValue.split(/[/\\]/).pop();
+            imageWidget.value = fileName;
           }
           
           // 恢复后更新预览
@@ -384,13 +416,13 @@ app.registerExtension({
         }
       };
       
-      // 在序列化时保存带标注的完整路径
+      // 保存完整的绝对路径
       const originalOnSerialize = nodeType.prototype.onSerialize;
       nodeType.prototype.onSerialize = function(o) {
         if (originalOnSerialize) {
           originalOnSerialize.apply(this, arguments);
         }
-        // 保存带标注的路径供后端使用
+        // 保存完整的绝对路径供后端使用
         if (this.pm_selected_image) {
           o.pm_selected_image = this.pm_selected_image;
         }

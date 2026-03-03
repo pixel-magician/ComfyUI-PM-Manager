@@ -209,6 +209,16 @@ class PMInputDialog {
             const data = await response.json();
             this.items = data.items || [];
             this.currentPath = data.current_path || '';
+            
+            // 保存基础目录到全局变量，供加载器使用
+            if (data.base_dir) {
+                if (this.directoryType === 'output') {
+                    window.pm_output_base_dir = data.base_dir;
+                } else {
+                    window.pm_input_base_dir = data.base_dir;
+                }
+            }
+            
             this.renderBreadcrumb();
             this.renderItems();
         } catch (error) {
@@ -451,12 +461,16 @@ class PMInputDialog {
                 if (e.target.closest('.pm-input-download-btn')) {
                     return;
                 }
+                if (e.target.closest('.pm-audio-player')) {
+                    return;
+                }
                 const type = card.dataset.type;
 
                 if (type === 'folder') {
                     this.loadItems(path);
                 } else if (this.selectionCallback && (type === 'image' || type === 'audio' || type === 'video')) {
-                    this.selectionCallback(item.path);
+                    // 传递绝对路径
+                    this.selectionCallback(item.absolute_path || item.path);
                     this.close();
                 } else if (type === 'image' || type === 'video') {
                     this.openPreview(path);
@@ -506,6 +520,14 @@ class PMInputDialog {
     }
 
     setupAudioPlayer(playerEl, path) {
+        // 只阻止卡片的点击事件冒泡
+        const stopEvents = ['click', 'dblclick'];
+        stopEvents.forEach(eventType => {
+            playerEl.addEventListener(eventType, (e) => {
+                e.stopPropagation();
+            }, false);
+        });
+        
         const audioUrl = `${this.getUrlPrefix()}/preview/${encodeURIComponent(path)}`;
         const audio = new Audio(audioUrl);
         const playBtn = playerEl.querySelector('.pm-audio-play-btn');
@@ -598,6 +620,7 @@ class PMInputDialog {
 
         const handleStart = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             if (!audio.duration) return;
             isDragging = true;
             const percent = updateProgressFromEvent(e);
@@ -719,6 +742,11 @@ class PMInputDialog {
         this.hideEmptyFolders = false;
         this.disableNewFolder = false;
         this.directoryType = 'input';
+        
+        // 停止所有正在播放的音频
+        if (window.pmGlobalAudioManager) {
+            window.pmGlobalAudioManager.stopAll();
+        }
         
         const filterSelect = this.dialog.querySelector('#pm-input-filter');
         if (filterSelect) {

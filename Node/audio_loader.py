@@ -7,6 +7,20 @@ import re
 from comfy_api.latest import IO
 
 
+def get_file_path(path):
+    """Helper function to get file path, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return path
+    return folder_paths.get_annotated_filepath(path)
+
+
+def file_exists(path):
+    """Helper function to check if file exists, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return os.path.exists(path) and os.path.isfile(path)
+    return folder_paths.exists_annotated_filepath(path)
+
+
 class PMLoadAudio(IO.ComfyNode):
     @classmethod
     def define_schema(cls) -> IO.Schema:
@@ -42,7 +56,7 @@ class PMLoadAudio(IO.ComfyNode):
 
     @classmethod
     def execute(cls, audio) -> IO.NodeOutput:
-        audio_path = folder_paths.get_annotated_filepath(audio)
+        audio_path = get_file_path(audio)
 
         args = ["ffmpeg", "-i", audio_path]
         try:
@@ -72,7 +86,7 @@ class PMLoadAudio(IO.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, audio, **kwargs):
-        audio_path = folder_paths.get_annotated_filepath(audio)
+        audio_path = get_file_path(audio)
         m = hashlib.sha256()
         with open(audio_path, "rb") as f:
             m.update(f.read())
@@ -80,7 +94,7 @@ class PMLoadAudio(IO.ComfyNode):
 
     @classmethod
     def validate_inputs(cls, audio, **kwargs):
-        if not folder_paths.exists_annotated_filepath(audio):
+        if not file_exists(audio):
             return "Invalid audio file: {}".format(audio)
         return True
 

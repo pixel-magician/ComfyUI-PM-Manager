@@ -38,6 +38,7 @@ from .media import (
     new_output_folder,
     get_pm_output_metadata,
     upload_pm_output,
+    get_pm_file_by_absolute_path,
 )
 
 __all__ = [

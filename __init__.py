@@ -100,6 +100,7 @@ def setup_routes():
         new_output_folder,
         get_pm_output_metadata,
         upload_pm_output,
+        get_pm_file_by_absolute_path,
     )
 
     # Workflow routes
@@ -237,6 +238,11 @@ def setup_routes():
     @PromptServer.instance.routes.post("/pm_output/upload")
     async def upload_output_route(request):
         return await upload_pm_output(request)
+
+    # Absolute path file access route
+    @PromptServer.instance.routes.get("/pm/view")
+    async def view_file_by_absolute_path_route(request):
+        return await get_pm_file_by_absolute_path(request)
 
 
 # 初始化路由

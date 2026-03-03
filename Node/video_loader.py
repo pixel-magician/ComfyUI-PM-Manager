@@ -17,6 +17,20 @@ import folder_paths
 from comfy.utils import common_upscale, ProgressBar
 from comfy_api.latest import IO
 
+
+def get_file_path(path):
+    """Helper function to get file path, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return path
+    return folder_paths.get_annotated_filepath(path)
+
+
+def file_exists(path):
+    """Helper function to check if file exists, supporting both absolute paths and annotated paths"""
+    if os.path.isabs(path):
+        return os.path.exists(path) and os.path.isfile(path)
+    return folder_paths.exists_annotated_filepath(path)
+
 try:
     from comfy_api.latest import InputImpl
     HAS_COMFY_API = True
@@ -427,7 +441,7 @@ class PMLoadVideo(IO.ComfyNode):
     @classmethod
     def execute(cls, video, force_rate, custom_width, custom_height, frame_load_cap,
                 skip_first_frames, select_every_nth, **kwargs) -> IO.NodeOutput:
-        video_path = folder_paths.get_annotated_filepath(strip_path(video))
+        video_path = get_file_path(video)
 
         kwargs_exec = {
             'video': video_path,
@@ -453,11 +467,11 @@ class PMLoadVideo(IO.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, video, **kwargs):
-        image_path = folder_paths.get_annotated_filepath(video)
+        image_path = get_file_path(video)
         return calculate_file_hash(image_path)
 
     @classmethod
     def validate_inputs(cls, video, **kwargs):
-        if not folder_paths.exists_annotated_filepath(video):
+        if not file_exists(video):
             return "Invalid video file: {}".format(video)
         return True
