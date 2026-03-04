@@ -292,6 +292,14 @@ app.registerExtension({
                 updateAudioSource(pathWidget.value);
             }
         }
+        
+        // 增加底部留白
+        const originalComputeSize = this.computeSize;
+        this.computeSize = function(out) {
+            const size = originalComputeSize ? originalComputeSize.apply(this, arguments) : out || this.size;
+            return [size[0], size[1] + 20];
+        };
+        this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]]);
       };
       
       const originalOnConfigure = nodeType.prototype.onConfigure;
