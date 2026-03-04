@@ -239,18 +239,42 @@ app.registerExtension({
             return /^[a-zA-Z]:[\\\/]/.test(path) || path.startsWith('/');
         };
 
-        // 辅助函数：将相对路径转换为绝对路径
-        const toAbsolutePath = (relativePath, type) => {
+        // 辅助函数：异步获取基础目录
+        const fetchBaseDir = async (type) => {
+            const prefix = type === 'output' ? '/pm_output' : '/pm_input';
+            try {
+                const response = await fetch(`${prefix}/list`);
+                const data = await response.json();
+                if (data.base_dir) {
+                    if (type === 'output') {
+                        window.pm_output_base_dir = data.base_dir;
+                    } else {
+                        window.pm_input_base_dir = data.base_dir;
+                    }
+                    return data.base_dir;
+                }
+            } catch (e) {
+                console.error('Failed to fetch base directory:', e);
+            }
+            return null;
+        };
+
+        // 辅助函数：将相对路径转换为绝对路径（支持异步）
+        const toAbsolutePath = async (relativePath, type) => {
             if (!relativePath) return relativePath;
             if (isAbsolutePath(relativePath)) return relativePath;
             
             // 获取基础目录
-            const basePath = type === 'output' 
+            let basePath = type === 'output' 
                 ? window.pm_output_base_dir 
                 : window.pm_input_base_dir;
             
             if (!basePath) {
-                // 如果基础目录未设置，尝试从 API 获取
+                // 如果基础目录未设置，主动从 API 获取
+                basePath = await fetchBaseDir(type);
+            }
+            
+            if (!basePath) {
                 return relativePath;
             }
             
@@ -258,12 +282,12 @@ app.registerExtension({
             return basePath + '/' + relativePath;
         };
 
-        const updateAudioSource = (filePath) => {
+        const updateAudioSource = async (filePath) => {
             // 优先使用 pm_selected_audio 中保存的完整绝对路径
             const actualPath = node.pm_selected_audio || filePath;
             if (actualPath) {
                 // 如果是相对路径，转换为绝对路径
-                const absolutePath = toAbsolutePath(actualPath, node.pm_directory_type || "input");
+                const absolutePath = await toAbsolutePath(actualPath, node.pm_directory_type || "input");
                 // 保存绝对路径
                 previewWidget.value.path = absolutePath;
                 previewWidget.updateSource();
@@ -272,7 +296,7 @@ app.registerExtension({
 
         if (pathWidget) {
             const originalCallback = pathWidget.callback;
-            pathWidget.callback = function(filename) {
+            pathWidget.callback = async function(filename) {
                 if (originalCallback) {
                     originalCallback.call(this, filename);
                 }
@@ -282,7 +306,7 @@ app.registerExtension({
                     // 如果不是从PM管理器选择的，widget的值就是相对路径，也需要保存
                     node.pm_selected_audio = filename;
                 }
-                updateAudioSource(filename);
+                await updateAudioSource(filename);
             };
 
             if (pathWidget.value) {
