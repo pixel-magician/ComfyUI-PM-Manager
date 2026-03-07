@@ -293,6 +293,9 @@ app.registerExtension({
                 previewWidget.updateSource();
             }
         };
+        
+        // 将 updateAudioSource 保存到节点实例，供 onConfigure 使用
+        node.updateAudioSource = updateAudioSource;
 
         if (pathWidget) {
             const originalCallback = pathWidget.callback;
@@ -351,6 +354,10 @@ app.registerExtension({
           if (pathWidget) {
             const fileName = savedValue.split(/[/\\]/).pop();
             pathWidget.value = fileName;
+          }
+          // 更新预览音频
+          if (this.updateAudioSource) {
+            this.updateAudioSource(savedValue);
           }
         }
       };
