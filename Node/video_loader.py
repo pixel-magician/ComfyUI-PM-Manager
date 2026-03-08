@@ -432,8 +432,8 @@ class PMLoadVideo(IO.ComfyNode):
             ],
             outputs=[
                 IO.Image.Output("images"),
-                IO.Int.Output("frame_count"),
                 IO.Audio.Output("audio"),
+                IO.Int.Output("frame_count"),
                 IO.Video.Output("video"),
             ],
         )
