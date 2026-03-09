@@ -1,9 +1,29 @@
 import os
+import json
 import comfy.sd
 import comfy.utils
 import folder_paths
 from comfy_api.latest import IO
+from comfy.ldm.lightricks.vae.audio_vae import AudioVAE
 from ..utils.model_paths import get_vae_path
+
+
+def is_audio_vae(metadata: dict) -> bool:
+    """Check if the metadata indicates this is an audio VAE model."""
+    if metadata is None or "config" not in metadata:
+        return False
+    
+    raw_config = metadata["config"]
+    if isinstance(raw_config, str):
+        try:
+            parsed_config = json.loads(raw_config)
+        except json.JSONDecodeError:
+            return False
+    else:
+        parsed_config = raw_config
+    
+    # Audio VAE has both audio_vae and vocoder config
+    return "audio_vae" in parsed_config and "vocoder" in parsed_config
 
 
 class PMVAELoader(IO.ComfyNode):
@@ -51,9 +71,14 @@ class PMVAELoader(IO.ComfyNode):
         if not vae_path:
             raise ValueError(f"VAE model not found: {selected_vae}")
 
-        # Load VAE using comfy.utils.load_torch_file and comfy.sd.VAE
+        # Load VAE using comfy.utils.load_torch_file
         sd, metadata = comfy.utils.load_torch_file(vae_path, return_metadata=True)
-        vae = comfy.sd.VAE(sd=sd, metadata=metadata)
+        
+        # Check if this is an audio VAE and load accordingly
+        if is_audio_vae(metadata):
+            vae = AudioVAE(state_dict=sd, metadata=metadata)
+        else:
+            vae = comfy.sd.VAE(sd=sd, metadata=metadata)
 
         # Get the relative filename from the full path for output
         models_dir = folder_paths.models_dir
