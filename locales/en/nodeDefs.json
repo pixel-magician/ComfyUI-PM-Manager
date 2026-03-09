@@ -142,5 +142,28 @@
         "name": "model_name"
       }
     }
+  },
+  "PMCheckpointLoader": {
+    "display_name": "PM Checkpoint Loader",
+    "description": "Loads a checkpoint model using PM Manager with enhanced UI. Supports multiple models but only loads the selected one.",
+    "inputs": {
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model"
+      },
+      "1": {
+        "name": "clip"
+      },
+      "2": {
+        "name": "vae"
+      },
+      "3": {
+        "name": "model_name"
+      }
+    }
   }
 }

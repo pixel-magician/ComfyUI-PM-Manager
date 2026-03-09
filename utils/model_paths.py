@@ -137,3 +137,32 @@ def extract_clip_name(clip_path):
     """Extract the clip name from a clip path."""
     basename = os.path.basename(clip_path)
     return os.path.splitext(basename)[0]
+
+
+def get_checkpoint_path(checkpoint_name):
+    """Get full path for a checkpoint model by name or relative path."""
+    try:
+        checkpoint_path = folder_paths.get_full_path("checkpoints", checkpoint_name)
+        if checkpoint_path and os.path.exists(checkpoint_path):
+            return checkpoint_path
+    except:
+        pass
+
+    # Try as relative path from checkpoints directory
+    checkpoint_path = os.path.join(folder_paths.models_dir, "checkpoints", checkpoint_name)
+    if os.path.exists(checkpoint_path):
+        return checkpoint_path
+
+    # Try with extensions
+    for ext in ['.safetensors', '.pt', '.pth', '.bin', '.ckpt']:
+        path_with_ext = checkpoint_path + ext
+        if os.path.exists(path_with_ext):
+            return path_with_ext
+
+    return None
+
+
+def extract_checkpoint_name(checkpoint_path):
+    """Extract the checkpoint name from a checkpoint path."""
+    basename = os.path.basename(checkpoint_path)
+    return os.path.splitext(basename)[0]

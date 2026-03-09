@@ -256,11 +256,13 @@ from .Node.clip_loader import PMClipLoader
 from .Node.image_loader import PMLoadImage
 from .Node.audio_loader import PMLoadAudio
 from .Node.video_loader import PMLoadVideo
+from .Node.checkpoint_loader import PMCheckpointLoader
 
 
 class PMManagerExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[IO.ComfyNode]]:
         return [
+            PMCheckpointLoader,
             PMUNetLoader,
             PMLoraLoader,
             PMVAELoader,

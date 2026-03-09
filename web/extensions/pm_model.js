@@ -204,7 +204,7 @@ class PMModelDialog {
         </svg>`;
         
         if (parts.length > 0) {
-            const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip';
+            const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip' || this.targetType === 'checkpoints';
             if (isRestricted) {
                 html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg-light)] font-medium">${t('rootDirectory', 'Root')}</span>`;
             } else {
@@ -216,9 +216,9 @@ class PMModelDialog {
         } else {
             html += `<span class="px-3 py-1 rounded-lg bg-[var(--comfy-input-bg)] text-[var(--fg)] font-medium">${t('rootDirectory', 'Root')}</span>`;
         }
-        
+
         let currentPath = '';
-        const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip';
+        const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip' || this.targetType === 'checkpoints';
         let baseDir = 'unet';
         if (this.targetType === 'vae') {
             baseDir = 'vae';
@@ -226,6 +226,8 @@ class PMModelDialog {
             baseDir = 'loras';
         } else if (this.targetType === 'clip') {
             baseDir = 'clip';
+        } else if (this.targetType === 'checkpoints') {
+            baseDir = 'checkpoints';
         }
         
         parts.forEach((part, index) => {
@@ -392,7 +394,7 @@ class PMModelDialog {
                 const type = card.dataset.type;
                 
                 if (type === 'folder') {
-                    const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip';
+                    const isRestricted = this.targetType === 'unet' || this.targetType === 'vae' || this.targetType === 'lora' || this.targetType === 'clip' || this.targetType === 'checkpoints';
                     let baseDir = 'unet';
                     if (this.targetType === 'vae') {
                         baseDir = 'vae';
@@ -400,8 +402,10 @@ class PMModelDialog {
                         baseDir = 'loras';
                     } else if (this.targetType === 'clip') {
                         baseDir = 'clip';
+                    } else if (this.targetType === 'checkpoints') {
+                        baseDir = 'checkpoints';
                     }
-                    
+
                     if (isRestricted) {
                         const targetPathParts = path.split(/[/\\]/).filter(Boolean);
                         if (targetPathParts.length === 0 || targetPathParts[0] !== baseDir) {
@@ -489,6 +493,16 @@ class PMModelDialog {
         this.updateDialogTranslations();
         this.dialog.style.display = 'block';
         await this.loadItems('clip');
+    }
+
+    async openForCheckpoint(node) {
+        this.selectMode = true;
+        this.targetNode = node;
+        this.targetType = 'checkpoints';
+        await initPromise;
+        this.updateDialogTranslations();
+        this.dialog.style.display = 'block';
+        await this.loadItems('checkpoints');
     }
 
     selectModel(item) {
@@ -631,6 +645,37 @@ class PMModelDialog {
                             selected: i === existingIndex
                         }));
                         this.targetNode.clipsWidget.value = updatedValue;
+                    }
+                }
+            } else if (this.targetType === 'checkpoints') {
+                if (this.targetNode.checkpointsWidget) {
+                    const currentValue = this.targetNode.checkpointsWidget.value || [];
+                    // Use relative path without extension, remove 'checkpoints/' prefix
+                    // Normalize path separators to forward slashes
+                    const normalizedPath = item.path.replace(/\\/g, '/');
+                    const modelPath = normalizedPath.replace(/\.[^/.]+$/, '').replace(/^checkpoints\//, '');
+                    const existingIndex = currentValue.findIndex(c => c.name === modelPath);
+
+                    if (existingIndex === -1) {
+                        const updatedValue = currentValue.map(c => ({
+                            ...c,
+                            selected: false
+                        }));
+                        updatedValue.push({
+                            name: modelPath,
+                            active: true,
+                            expanded: false,
+                            locked: false,
+                            selected: true,
+                            title: item.title || ''
+                        });
+                        this.targetNode.checkpointsWidget.value = updatedValue;
+                    } else {
+                        const updatedValue = currentValue.map((c, i) => ({
+                            ...c,
+                            selected: i === existingIndex
+                        }));
+                        this.targetNode.checkpointsWidget.value = updatedValue;
                     }
                 }
             }
@@ -1358,7 +1403,11 @@ app.registerExtension({
     openForClip(node) {
         pmModelDialog.openForClip(node);
     },
-    
+
+    openForCheckpoint(node) {
+        pmModelDialog.openForCheckpoint(node);
+    },
+
     setup() {
         const insertButton = () => {
             const existingTab = document.getElementById('pm-model-tab');

@@ -142,5 +142,28 @@
         "name": "模型名称"
       }
     }
+  },
+  "PMCheckpointLoader": {
+    "display_name": "PM Checkpoint加载器",
+    "description": "使用PM管理器加载Checkpoint模型，支持增强型UI，支持多模型但仅加载选中的模型",
+    "inputs": {
+      "weight_dtype": {
+        "name": "权重数据类型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型"
+      },
+      "1": {
+        "name": "CLIP"
+      },
+      "2": {
+        "name": "VAE"
+      },
+      "3": {
+        "name": "模型名称"
+      }
+    }
   }
 }

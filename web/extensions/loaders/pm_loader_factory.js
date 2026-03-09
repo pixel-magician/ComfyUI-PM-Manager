@@ -8,7 +8,9 @@ export function createLoader(config) {
     comfyClasses,
     widgetPropertyName,
     addWidgetFn,
-    openMethodName
+    openMethodName,
+    buttonLabelKey,
+    buttonLabelDefault
   } = config;
 
   app.registerExtension({
@@ -23,12 +25,14 @@ export function createLoader(config) {
           setupNode(this, {
             widgetPropertyName,
             addWidgetFn,
-            openMethodName
+            openMethodName,
+            buttonLabelKey,
+            buttonLabelDefault
           });
         };
       }
     },
-    
+
     async loadedGraphNode(node) {
       if (comfyClasses.includes(node.comfyClass)) {
         loadSavedWidgetValue(node, widgetPropertyName);

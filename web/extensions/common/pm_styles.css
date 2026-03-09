@@ -1291,4 +1291,230 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Checkpoint styles */
+.pm-checkpoints-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  background-color: rgba(40, 44, 52, 0.6);
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  outline: none;
+}
+
+.pm-checkpoints-container:focus {
+  outline: none;
+}
+
+.pm-checkpoint-empty-state {
+  text-align: center;
+  padding: 20px 0;
+  color: rgba(226, 232, 240, 0.8);
+  font-style: italic;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  width: 100%;
+}
+
+.pm-checkpoint-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  background-color: rgba(45, 55, 72, 0.7);
+  touch-action: none;
+  position: relative;
+  cursor: pointer !important;
+}
+
+.pm-checkpoint-entry:hover {
+  background-color: rgba(50, 60, 80, 0.8);
+}
+
+.pm-checkpoint-entry.selected {
+  background-color: rgba(66, 153, 225, 0.3) !important;
+  border: 1px solid rgba(66, 153, 225, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3) !important;
+}
+
+.pm-checkpoint-name {
+  margin-left: 4px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 13px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.pm-checkpoint-toggle {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: rgba(45, 55, 72, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pm-checkpoint-toggle.active {
+  background-color: rgba(66, 153, 225, 0.9);
+  border-color: rgba(66, 153, 225, 0.9);
+}
+
+.pm-checkpoint-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.pm-checkpoint-entry.dragging {
+  opacity: 0.5;
+  background-color: rgba(66, 153, 225, 0.4);
+  box-shadow: 0 4px 16px rgba(66, 153, 225, 0.4);
+  transform: scale(1.02) rotate(1deg);
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.pm-checkpoint-entry.drag-over-top::before,
+.pm-checkpoint-entry.drag-over-bottom::before {
+  content: '' !important;
+  position: absolute !important;
+  left: -6px !important;
+  right: -6px !important;
+  height: 8px !important;
+  background: linear-gradient(90deg, #4ade80, #22c55e, #4ade80, #22c55e, #4ade80) !important;
+  background-size: 300% 100% !important;
+  animation: shimmer 0.8s linear infinite !important;
+  border-radius: 4px !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 1), 0 0 20px rgba(74, 222, 128, 0.6), 0 0 30px rgba(74, 222, 128, 0.3) !important;
+  display: block !important;
+}
+
+.pm-checkpoint-entry.drag-over-top::before {
+  top: -6px !important;
+}
+
+.pm-checkpoint-entry.drag-over-bottom::before {
+  bottom: -6px !important;
+}
+
+.pm-checkpoint-entry.drag-target {
+  background-color: rgba(74, 222, 128, 0.15);
+  transform: translateX(8px);
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  transition: all 0.2s ease;
+}
+
+.pm-checkpoint-entry.drag-target .pm-checkpoint-drag-handle::after {
+  content: '→' !important;
+  position: absolute !important;
+  left: 20px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #4ade80 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 6px rgba(74, 222, 128, 1), 0 0 12px rgba(74, 222, 128, 0.8) !important;
+  animation: bounce-right 0.4s ease infinite alternate !important;
+  z-index: 10000 !important;
+  pointer-events: none !important;
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  text-align: center !important;
+}
+
+.pm-checkpoint-drag-handle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  color: rgba(226, 232, 240, 0.6);
+  transition: all 0.2s ease;
+  margin-right: 8px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pm-checkpoint-drag-handle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pm-checkpoint-drag-handle:hover {
+  color: rgba(226, 232, 240, 0.9);
+  transform: scale(1.1);
+}
+
+.pm-checkpoint-drag-handle:active {
+  cursor: grabbing;
+}
+
+.pm-checkpoint-entry-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+}
+
+.pm-checkpoint-context-menu {
+  position: fixed;
+  z-index: 10001;
+  background: rgba(35, 40, 50, 0.98);
+  border: 1px solid rgba(66, 153, 225, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  min-width: 140px;
+  animation: fadeIn 0.1s ease;
+}
+
+.pm-checkpoint-context-menu-item {
+  padding: 8px 12px;
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.pm-checkpoint-context-menu-item:hover:not(.disabled) {
+  background: rgba(66, 153, 225, 0.2);
+  color: white;
+}
+
+.pm-checkpoint-context-menu-item.disabled {
+  color: rgba(226, 232, 240, 0.4);
+  cursor: not-allowed;
+}
+
+.pm-checkpoint-context-menu-separator {
+  height: 1px;
+  background: rgba(226, 232, 240, 0.1);
+  margin: 4px 0;
+}
+
 
